@@ -1,0 +1,30 @@
+<Document>
+  <FileVersion>1</FileVersion>
+  <PropellantData>
+    <ChamberPressure>1000</ChamberPressure>
+    <ExhaustPressure>14.7</ExhaustPressure>
+    <Temperature>298</Temperature>
+    <Boost>False</Boost>
+    <PropellantName>Propellant Name</PropellantName>
+    <Comments />
+    <Ingredient>
+      <Name>AMMONIUM PERCHLORATE</Name>
+      <Wt>79.800</Wt>
+    </Ingredient>
+    <Ingredient>
+      <Name>CARBON BLACK</Name>
+      <Wt>0.200</Wt>
+    </Ingredient>
+    <Ingredient>
+      <Name>POLYBUTADIENE/ACRYLONITRILE COPOLYMER</Name>
+      <Wt>17.200</Wt>
+    </Ingredient>
+    <Ingredient>
+      <Name>EPOXY 201</Name>
+      <Wt>2.800</Wt>
+    </Ingredient>
+    <BurnRateCoefficient>0</BurnRateCoefficient>
+    <BurnRateExponent>0</BurnRateExponent>
+    <SolidGrainWts>True</SolidGrainWts>
+  </PropellantData>
+</Document>

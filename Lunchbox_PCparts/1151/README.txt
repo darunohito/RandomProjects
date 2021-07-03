@@ -1,0 +1,1 @@
+CPU Delid tool 771/775/1150/1155/1156/1151 by Dawnaur on Thingiverse: https://www.thingiverse.com/thing:1630652
