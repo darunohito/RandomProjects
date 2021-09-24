@@ -1,0 +1,9 @@
+bitcoin network uses around 18.8 TW of power, or 165 TWh of energy per year.
+The bitcoin hashrate is 136 Exa-hash per second, or 136,000,000 Tera-hash per second.
+This works out to 18.8 / 136,000,000 = 138 nW/Hash efficiency
+The bitcoin network that Blake3 can acheive a ~15x uplift in hashing efficiency, we can acheive a 15 x 138 = 2.0 uW / Hash efficiency on the Jengascoin network. 
+
+Up to a certain "change-over" network difficulty, we will see a linear increase in energy consumption with network hashrate. Let's take an example GPU hashrate of 1 MH/s (just a guess, could use extra info)
+If we wanted to change-over to the 3-phase miner selection at, say, a total of 500 GPU-equivalent active miners, this would correspond with roughly 100 kW network power consumption at the change-over assuming a GPU power consumption of 200W. This can be fit to a linear plot (y = mx + b) of [power consumption = gpu_hashrate * num_of_gpus]
+Provided we want to encourage solo miners to participate even at high network difficulties, this means that we want to allow an increasing number of miners to pass through the phase-2 lottery. This curve will follow a logarithmic trend [ power = scalar * log_base2(network hashrate) ]
+If we make this curve tangent to the original linear power/phase-1 hashrate curve, where the slope is 200W/(MH/s), wherein the logarithmic slope is equal to [1 / ( x ln(b) )], or [1 / (hashrate@minimum_miners * ln(scalar))] which is equal to [1 / (500MH/s * ln(scalar)], we set the last expression equal to 200W/(MH/s), which solves for the value of "scalar" == 1/10000 W^-1
