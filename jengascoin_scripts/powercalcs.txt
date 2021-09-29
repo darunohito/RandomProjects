@@ -1,7 +1,7 @@
 bitcoin network uses around 18.8 TW of power, or 165 TWh of energy per year.
 The bitcoin hashrate is 136 Exa-hash per second, or 136,000,000 Tera-hash per second.
 This works out to 18.8 / 136,000,000 = 138 nW/Hash efficiency
-The bitcoin network that Blake3 can acheive a ~15x uplift in hashing efficiency, we can acheive a 15 x 138 = 2.0 uW / Hash efficiency on the Jengascoin network. 
+The bitcoin network that Blake3 can acheive a ~15x uplift in hashing efficiency, we can acheive a 15 x 138 = 2.0 uW / Hash efficiency on the Jengascoin network. Since our miners likely won't be using ASICs for a while, we'll just look at GPU rates, so we'll call the 15x uplift a wash.
 
 Up to a certain "change-over" network difficulty, we will see a linear increase in energy consumption with network hashrate. Let's take an example GPU hashrate of 1 MH/s (just a guess, could use extra info)
 If we wanted to change-over to the 3-phase miner selection at, say, a total of 500 GPU-equivalent active miners, this would correspond with roughly 100 kW network power consumption at the change-over assuming a GPU power consumption of 200W. This can be fit to a linear plot (y = mx + b) of [power consumption = slope * gpu_hashrate * num_of_gpus], where slope is 200W / 1,000,000 H/s, or 200uW/Hash/s.

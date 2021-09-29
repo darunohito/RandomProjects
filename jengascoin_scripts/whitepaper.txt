@@ -1,0 +1,96 @@
+Multiphase Proof-of-Work Consensus Algorithm
+by Daru
+
+Goals:
+-reduce energy usage of high-difficulty network
+-increase decentralization of PoW network
+-improve resilience to 51% attacks
+
+Abstract:
+	Proof of Work (PoW) is the oldest and simplest consensus algorithm used by blockchains for performing trustless verification of a public transaction ledger. A primary weakness of the algorithm is found in the electrical energy required to verify transactions, which is linearly proportional to the network difficulty. A secondary weakness is found in the increasingly-centralized pool mining operations, which at the upper limit, will compromise the security of a network.
+
+	Herein proposed is a minor set of hypothetical changes to a PoW consensus algorithm which attempt to address these problems while retaining the original functionality of the algorithm. The changes are compatible with any SHA-3-like hashing algorithm, and minimal changes to a traditional PoW block reward system are required for use. A method for cryptographic data compression and decentralized storage is also required for retaining scalability to high-difficulty networks.
+	
+	At high network difficulties, the modelled energy consumption improvements indicate anywhere from a ten-fold to a ten-thousand-fold reduction in average required power to run the modified PoW network at an equivalent network difficulty to a traditional PoW network, with minimal impact on network security, and depending on developer choices. This is by reducing the effective "duty-cycle" of the network's high-power mining infrastructure.
+
+Body:
+	The proposed solution is a multiphase approach to PoW.
+		[0] Low Network Difficulty Base State
+		[1] The Buy-In Phase
+		[2] The Lottery Phase
+		[3] The Mining Phase
+
+	Low Network Difficulty Base State
+		At low network difficulties (and proportionally low electrical energy requirements), the network will operate identically to a traditional PoW network. There will be no defined epochs in this phase. After passing a difficulty threshold (with some hysteresis value) set by the blockchain developers, the multiphase operation will take over. This difficulty threshold can target an estimated number of miners, amount of electrical power, or some other metric. 
+
+	The Buy-In Phase
+		This phase is the most energy-intensive state of the network. Once crossing over the difficulty threshold, or following the end of the last multiphase epoch, a new epoch will be initiated with [1] the Buy-In Phase. This is a low-difficulty hash which should be solvable in one block-time by a significant proportion of solo miners. Critically, the exact problem to solve will be wallet address-specific. 
+
+		An example problem to solve would be:
+			hash_function(last_block_nonce + address + new_nonce) < easy_difficulty
+		where the "+" symbol indicates concatenation.
+
+		The solutions, along with the miner's public key, will be transmitted to the blockchain through a Merkle-tree branch structure, effectively compressing the required storage space on the Merkle-tree root structure, which is stored directly in each block in the blockchain.
+
+	The Lottery Phase
+		Once the last block prior to the new epoch is solved, the Lottery Phase will near-instantaneously begin and conclude. A few operations will occur in that moment:
+			[1] The miners who failed to solve the Buy-In Phase easy hash will stop mining, as they won't be rewarded for any solved blocks during the new epoch, as dictated by the address-specific solutions required in the Buy-In phase.
+			[2] The miners who solved the Buy-In Phase easy hash will perform a single hash of their address with the nonce of the newly-solved block. 
+				[3a] If that hash is above the value of "lottery_difficulty", they will stop mining, as they won't be rewarded for any solved blocks as dictated by the lottery results.
+				[3b] If that hash is below the value of "lottery_difficulty", they begin solving the hash for the new block.
+
+	The Mining Phase
+		This phase is nearly identical to traditional PoW mining, with the following exceptions:
+			[1] This phase can be split into multiple "sub-epochs", wherein the end of a sub-epoch will be followed by an automatic Lottery Phase as described above, except without any initial Buy-In phase. This will massively reduce average network power consumption. The number of sequential sub-epochs can be variable, and it is suggested that (at a minimum) the network automatically perform another Buy-In Phase once the network difficulty of the Mining Phase falls below a certain level, indicating a low number of active miners in that sub-epoch.
+			[2] For the purpose of increasing network decentralization, wallet addresses which submit multiple blocks during a single sub-epoch shall receive reducing rewards for each subsequent block. This will directly target the reduction of profit for pool mining operations which are able to shift their processing power to a single wallet address. This variance in block reward will have to be balanced elsewhere to manage the planned minting rate of the currency.
+			[3] At the end of an epoch, the network will enter the Buy-In phase once more, to continue the cycle, unless the network difficulty has dropped below the threshold (and some hysteresis value).
+			
+	Example Implementation with Logarithmic Miner Acceptance Rate
+		For the purpose of the exercise, let's make the following assumptions:
+			h_solo 	= 	1 MH/s 			typical solo-miner hashrate
+			E_avg 	= 	100 W/(MH/s) 	average mining efficiency
+			T_b 	= 	10 second 		target Block Time
+			T_e 	= 	30 minute 		target Epoch Time
+			T_se 	= 	5 minute 		target Sub-Epoch Time
+			NH_T 	= 	10 GH/s 		Network Hashrate (NH) Threshold
+			
+		We will calculation the Efficiency (E) and total power usage of the network at several Network Hashrate (NH) values, noting that the trivial case of NH < Threshold gives an efficiency of 100 W/(MH/s).
+		
+		At the Threshold, the network will consume 
+			P(NH = NH_T) = E * NH_T = 1 MW
+		which is roughly the equivalent of 800 American households. The number of solo miner equivalents at this point is equal to 
+			n_solo_threshold = NH_T/h_solo = 10,000 miners
+		
+		The equation for determining the power usage during the Mining Phase following a Lottery Phase once the NH Threshold has been exceeded is given by
+			P_phase3(NH) = P(NH_T) * (1 + ln(NH/NH_T))
+		and the corresponding equation for the number of active miners during the Mining Phase is 
+			n_solo(NH) = n_solo_threshold * (1 + ln(NH/NH_T))
+		
+		Solved for the case of NH = 100 GH/s,
+			P_phase3(NH = 100G) = 3.3 MW 
+			n_solo(NH = 100G) = 33,026 solo miner equivalents
+		
+		However, one must also include the average power utilized during the Buy-In Phase, which is given by
+			P_phase1_avg(NH) = NH * E_avg * T_b / T_e
+		which, solved at the previous NH = 100 GH/s,
+			P_phase1_avg(NH = 100G) = 55.6 KW
+			
+		So the total average power usage at a NH is given by 
+			P_avg(NH) = P_phase3(NH) + P_phase1_avg(NH)
+		which, evaluated at NH = 100 GH/s gives the result:
+			P_avg(NH = 100G) = 3.3556 MW
+		and gives a total efficiency of 
+			E(NH = 100G) = 3.3556 MW / 100 GH/s = 33.56 W/(MH/s) 
+		or an improvement of 3x compared to the efficiency at the threshold.
+		
+		For the case of NH = 1 TH/s,
+			P_avg(NH = 1T) = 4.61 MW + 556 KW = 5.16 MW
+			E(NH = 1T) = 5.2 W / MH/s
+		or an improvement of 19x compared to the efficiency at the threshold.
+		
+		A final test case of 100 TH/s gives
+			P_avg(NH = 100T) = 10.21 MW + 55.6 MW = 65.77 MW
+			E(NH = 100T) = 0.658 W / MH/s
+		or an improvement of 152x compared to the efficiency at the threshold.
+		
+		At the upper limit, assuming an unchanging epoch time, the logarithmic effects of Phase 3 are negligible when compared to the linear effects of Phase 1. One can also have a shifting Epoch Time to improve efficiency, but the Epoch Time should be kept low enough that your number of active miners among your Phase 2 Lottery winners does not dip so low that the network security is compromised or the Block Time becomes highly variable.
