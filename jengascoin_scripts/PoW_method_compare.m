@@ -49,7 +49,7 @@ function octave_value_list = PoW_method_compare (h_max, gpu_hashrate, gpu_xo_num
  figure(1)
  clf
  axes('fontsize',14)
- plot(h,y_lin,'linewidth',2,h,y_log,'linewidth',2,h,y_log_plus_phase_1,'linewidth',2)
+ semilogy(h,y_lin,'linewidth',2,h,y_log,'linewidth',2,h,y_log_plus_phase_1,'linewidth',2)
  title('Power vs Hashrate for Proof-of-Work Consensus Algorithms','fontsize',14)
  xlim([0,h_max])
  ylim([0,max(y_lin)])

@@ -2,14 +2,16 @@ Multiphase Proof-of-Work Consensus Algorithm
 by Daru
 
 Goals:
--reduce energy usage of high-difficulty network
--increase decentralization of PoW network
--improve resilience to 51% attacks
+	- reduce energy usage of a high-difficulty Proof-of-Work (PoW) network
+	- increase decentralization of PoW network
+	- improve resilience to 51% attacks
 
 Abstract:
-	Proof of Work (PoW) is the oldest and simplest consensus algorithm used by blockchains for performing trustless verification of a public transaction ledger. A primary weakness of the algorithm is found in the electrical energy required to verify transactions, which is linearly proportional to the network difficulty. A secondary weakness is found in the increasingly-centralized pool mining operations, which at the upper limit, will compromise the security of a network.
+	Proof of Work (PoW) is the oldest, simplest, and most common consensus algorithm used by blockchains for performing trustless verification of a public transaction ledger. It is very secure against Sybil attacks which may compromise other blockchains, and it is difficult to force centralization of network's processing power.
+	
+	A primary weakness of the algorithm is found in the electrical energy required to verify transactions, which is linearly proportional to the network difficulty. A secondary weakness is found in the increasingly-centralized pool mining operations, which at the upper limit, will compromise the security of a network.
 
-	Herein proposed is a minor set of hypothetical changes to a PoW consensus algorithm which attempt to address these problems while retaining the original functionality of the algorithm. The changes are compatible with any SHA-3-like hashing algorithm, and minimal changes to a traditional PoW block reward system are required for use. A method for cryptographic data compression and decentralized storage is also required for retaining scalability to high-difficulty networks.
+	Herein proposed is a minor set of hypothetical changes to a PoW consensus algorithm which attempt to address these problems while retaining the original functionality of the algorithm. The changes are compatible with any SHA3-like hashing algorithm, and few changes to a traditional PoW block reward system are required for use. A method for cryptographic data compression and decentralized storage is also required for retaining scalability to high-difficulty networks.
 	
 	At high network difficulties, the modelled energy consumption improvements indicate anywhere from a ten-fold to a ten-thousand-fold reduction in average required power to run the modified PoW network at an equivalent network difficulty to a traditional PoW network, with minimal impact on network security, and depending on developer choices. This is by reducing the effective "duty-cycle" of the network's high-power mining infrastructure.
 
@@ -101,7 +103,7 @@ Body:
 			[2] reduced hardware cooling requirements due to short load periods (equal to sub-epoch length)
 			[3] lengthened viability of lower-efficiency mining hardware, potentially reducing mining e-waste
 			[4] shifts mining cost/benefit analysis to capital investment and away from electricity rates, which may reduce geographical concentration of mining operations.
-		- The Buy-In, Lottery, and Phase 3 Mining subsequent reward reductions combine to forcibly reduce profitability of highly-centralized mining operations.
+		- The Buy-In, Lottery, and Phase 3 Mining subsequent reward reductions combine to forcibly reduce profitability of highly-centralized mining operations:
 			[1] The Buy-In phase will force pools to develop a method of disbursing wallet address-specific assignments to their miners to maintain a proportionate solve-rate to their pool hashrate. This will also inadvertantly force pools to openly transmit their wallet addresses to their miners, increasing transparency.
 			[2] The desired hashrate-per-wallet ratio can be baked into the blockchain through the Buy-In difficulty, with diminishing returns for higher-power miners.
 			[3] The gas fees associated with pooling funds for disbursement and the fees associated with currency exchange from a plurality of wallet addresses will be disproportionatly higher than for single-wallet miners, effectively taxing centralized mining operations to support block rewards.
