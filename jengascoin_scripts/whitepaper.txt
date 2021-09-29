@@ -93,4 +93,20 @@ Body:
 			E(NH = 100T) = 0.658 W / MH/s
 		or an improvement of 152x compared to the efficiency at the threshold.
 		
-		At the upper limit, assuming an unchanging epoch time, the logarithmic effects of Phase 3 are negligible when compared to the linear effects of Phase 1. One can also have a shifting Epoch Time to improve efficiency, but the Epoch Time should be kept low enough that your number of active miners among your Phase 2 Lottery winners does not dip so low that the network security is compromised or the Block Time becomes highly variable.
+		At the upper limit, assuming an unchanging epoch time, the logarithmic effects of Phase 3 are negligible when compared to the linear effects of Phase 1. One can also implement a shifting Epoch Time to improve efficiency, but the Epoch Time should be kept low enough that your number of active miners among your Phase 2 Lottery winners does not dip so low that the network security is compromised or the Block Time becomes highly variable.
+		
+	Other notes
+		- The efficiency improvements have several secondary effects:
+			[1] multiplicatively increased mining profitability vs electricity costs
+			[2] reduced hardware cooling requirements due to short load periods (equal to sub-epoch length)
+			[3] lengthened viability of lower-efficiency mining hardware, potentially reducing mining e-waste
+			[4] shifts mining cost/benefit analysis to capital investment and away from electricity rates, which may reduce geographical concentration of mining operations.
+		- The Buy-In, Lottery, and Phase 3 Mining subsequent reward reductions combine to forcibly reduce profitability of highly-centralized mining operations.
+			[1] The Buy-In phase will force pools to develop a method of disbursing wallet address-specific assignments to their miners to maintain a proportionate solve-rate to their pool hashrate. This will also inadvertantly force pools to openly transmit their wallet addresses to their miners, increasing transparency.
+			[2] The desired hashrate-per-wallet ratio can be baked into the blockchain through the Buy-In difficulty, with diminishing returns for higher-power miners.
+			[3] The gas fees associated with pooling funds for disbursement and the fees associated with currency exchange from a plurality of wallet addresses will be disproportionatly higher than for single-wallet miners, effectively taxing centralized mining operations to support block rewards.
+			[4] The Lottery Phase will also force pools to disburse hashing assignments to their miners on an address basis, increasing implementation difficulty.
+			[5] The reward reductions in Phase 3 should be implemented delicately so as to reduce the chance of unpredictably losing significant hashing power and increasing Block Time variability. 
+		
+Conclusion
+	A hypothetical modification to the traditional Proof-of-Work (PoW) consensus algorithm is explored. It was shown that a significant reduction in energy requirements and improvements miner decentralization can be acheived without sacrificing the strengths of the PoW algorithm.
