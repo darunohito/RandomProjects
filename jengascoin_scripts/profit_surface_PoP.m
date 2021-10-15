@@ -2,23 +2,27 @@
 
 % This surface is not a pure Proof-of-Work reward function. This reflects an emerging consensus algorithm tentatively called "Proof of Pledge", which is an amalgamation of many consensus algorithms and a modified reward function. The details will not be explored here, beyond the ante, raffle, and reward functions. Additionally, wallet-shuffling exploitation methods are not yet explored here.
 
-%   The ante (or burn) function is a required deposit to enter the drawing, and follows an inverse proportionality to wallet balance.
+%   The ante (or burn) function is a required deposit to enter the drawing, and follows an inverse power relationship to wallet balance.
 %   The raffle (or lottery) is a true-random sample of all mining addresses which ante the requisite currency to enter the drawing.
 %   The reward function gives logarithmic returns to an address which solves multiple hashes in a given epoch, up to a given limit.
 
 % author: Daru
 
+clf
+clear all
+
 %% INPUT PARAMETERS %%
     % Adjust the inputs below:
 burn_coefficient = 1; % enter any positive number. Higher number is a larger ante/burn.
+burn_power = 0.01; %%%%%%%%%%%%%%IMPLEMENT
 raffle_win_ratio = 0.2; % enter a positive number no greater than 1. (0 < number <= 1)
-reward_coefficient = 1; % enter any positive number. Higher number scales rewards.
+reward_coefficient = 0.5; % enter any positive number. Higher number scales rewards.
 reward_cutoff = 5; % enter a positive whole number. Max number of accepted hashes in a given epoch.
 
 % Optional adjustments:
-plot_granularity = 101; % Enter a whole number greater than or equal to 10. Determines number of x and y points.
-plot_balance_range_multiplier = 10; % enter any positive number. Scales balance axis.
-plot_extension_percentage = 50; % will accept any number from between -100 and +inf, but is intended to give a natural plot scale, dependent on the reward_cutoff and balance_cutoff. 0, 10, 50, 100 are all reasonable entries.
+plot_granularity = 51; % Enter a whole number greater than or equal to 10. Determines number of x and y points.
+plot_balance_range_multiplier = 5; % enter any positive number. Scales balance axis. Recommend at least 2.
+plot_extension_multiplier = 1.2; % will accept any number from between 0 and +inf, but is intended to give a natural plot scale, dependent on the reward_cutoff and balance_cutoff. 1, 1.2, 2 are all reasonable entries.
 
 
 %% INPUT CHECKS %%
@@ -29,7 +33,7 @@ if (reward_coefficient < 0) error ("reward_coefficient invalid"); endif
 if (reward_cutoff < 1 || mod(reward_cutoff,1)) error("reward_cutoff invalid"); endif
 if (plot_granularity < 10 || mod(plot_granularity,1)) error("plot_granularity invalid"); endif
 if (plot_balance_range_multiplier <= 0) error("plot_balance_range_multiplier invalid"); endif
-if (plot_extension_percentage <= -100) error("plot_extension_percentage invalid"); endif
+if (plot_extension_multiplier <= -1) error("plot_extension_multiplier invalid"); endif
 
 %% INITIALIZE DATA STRUCTURES %%
     % Don't touch!
@@ -38,17 +42,40 @@ balance_cutoff = sqrt(burn_coefficient); % minimum number of coins in a wallet t
 % "x" == "reward_count", which is proportional to hashrate
 % "y" == "wallet_balance", in coins
 % "z" == "profit", in terms of coins
-x_range = [0 reward_cutoff] * plot_extension_percentage;
+x_range = [0 reward_cutoff] * plot_extension_multiplier;
 x = linspace(x_range(1),x_range(2),plot_granularity);
 
-y_range = [0 balance_cutoff*plot_balance_range_multiplier] * plot_extension_percentage;
+y_range = [0 balance_cutoff*plot_balance_range_multiplier] * plot_extension_multiplier;
 y = linspace(y_range(1),y_range(2),plot_granularity);
 
+z = zeros(length(x),length(y));
 
-
+% -realpow(burn_coefficient*y(y_i),-burn_power)
 %% MATH %%
     % Don't touch!
-for index_x = 1:
-
+for x_i = 1:length(x)
+  for y_i = 1:length(y)
+    if(y(y_i) < balance_cutoff)
+      z(y_i,x_i) = 0;
+    elseif(x(x_i) > reward_cutoff)
+      z(y_i,x_i) = -burn_coefficient/y(y_i) + reward_coefficient*log(reward_cutoff);
+    else
+      z(y_i,x_i) = -burn_coefficient/y(y_i) + reward_coefficient*log(x(x_i));
+    endif
+      z(y_i,x_i) = z(y_i,x_i) * raffle_win_ratio;
+  endfor
+endfor
 
 %% PLOT %% 
+figure(1);
+fig = mesh(x,y,z);
+xlabel("Rewards Received\n(average per epoch)",'Rotation',20);
+ylabel("Wallet Balance (coins)",'Rotation',-30);
+zlabel("Profit (coins,average per epoch)")
+
+
+
+
+
+
+
