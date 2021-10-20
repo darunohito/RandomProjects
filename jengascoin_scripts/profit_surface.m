@@ -8,22 +8,22 @@
 
 % author: Daru
 
-clf
+
 clear all
 
 
 %% INPUT PARAMETERS %%
     % Adjust the inputs below:
-burn_coefficient = 3; % enter any positive number. Higher number is a larger ante/burn.
-burn_power = -.5; % enter any negative number.  
+burn_coefficient = 100; % enter any positive number. Higher number is a larger ante/burn.
+burn_power = -0.2; % enter any negative number.  
 raffle_win_ratio = 0.1; % enter a positive number no greater than 1. (0 < number <= 1)
-reward_coefficient = 1; % enter any positive number. Higher number scales rewards.
-reward_cutoff = 4; % enter a positive whole number. Max number of accepted hashes in a given epoch.
+reward_coefficient = 1000; % enter any positive number. Higher number scales rewards.
+reward_cutoff = 10; % enter a positive whole number. Max number of accepted hashes in a given epoch.
 
     % Optional adjustments:
 plot_granularity = 251; % Enter a whole number greater than or equal to 10. Determines number of x and y points.
 color_granularity = 401; % Enter a whole number greater than or equal to 5. Determines number of color steps.
-plot_balance_range_multiplier = 1000; % enter any positive number. Scales balance axis. Recommend at least 2.
+plot_balance_range_multiplier = 10; % enter any positive number. Scales balance axis. Recommend at least 2.
 plot_extension_multiplier = 1; % will accept any number from between 0 and +inf, but is intended to give a natural plot scale, dependent on the reward_cutoff and balance_cutoff. 1, 1.2, 2 are all reasonable entries.
 
 
@@ -105,4 +105,5 @@ for i1 = 1:2
   endif
   grid on
   colorbar
+  
 endfor

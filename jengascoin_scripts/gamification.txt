@@ -1,0 +1,66 @@
+Gamification of Crypto-Mining
+by Daru
+
+PRIMARY GOALS
+-------------
+1) MINIMIZE energy usage
+2) POWER-UP solo miners
+3) ENABLE coexistence of CPU, GPU, & ASIC miners
+4) REWARD long-term contributors to ecosystem security & stability
+5) SECURE the blockchain against common attacks, like double-spend, Sybil, 51%, and Block-withholding
+
+PHILOSOPHY
+----------
+The main issues with attempting to make Proof-of-Work (PoW) equitable, efficient, and secure are the following:
+	1) It's very difficult to limit a PoW blockchain to a desired technology (CPU, GPU, ASIC, etc).
+	2) Massive mining operations, whether solo or pooled, are a threat to the trustless security of the blockchain.
+	3) The ability for a large mining operation to move hashing power between public addresses makes it near-impossible to force the coexistence of technologies which operate at extremely different performances.
+	4) PoW is fundamentally energy-intensive, no matter what algorithm is in-place.
+
+This theoretical consensus algorithm attempts to solve all of these problems.
+	
+METHODS
+-------
+1) Proof-of-Burn Entry phase
+	-easy, low-footprint storage of all "committed" mining contributors
+	-defends against "traditional" Sybil attacks (too expensive to game)
+	-utilizes built-in transaction functionality
+2) Address-specific Lottery phase
+	-based on "commit and reveal" RNG method with simple Proof-of-Delay 
+	-random number is hash of short nonces, each submitted by the miners during the Burn phase
+	-winners are addresses which satisfy the following: hash(hash(nonce_1+...nonce_n) + address) < lottery diff
+	-saves tons of energy (see lin_log_compare.m) 
+	-requires no (or very little) extra blockchain space
+3) ELO-style mining difficulty assignments & "matchups"
+	-similar hashrate miners compete against each other
+	-higher hashrate "ELOs" have *slightly* higher rewards (eg 10x reward for 1000x hashrate)
+	-long-term mainstays of a given ELO are given higher rewards
+	-ELO rankings are "public" & recorded, for bragging rights & statistical analysis
+	-***ALL new wallets start at MAX ELO*** 
+		* this is necessary to completely eradicate Sybil attack through wallet generation, "smurfing", and most other potential security weaknesses
+	-***CAN be parallelized chains or even parallelized block verification for redundant transaction verification from different miner demographics***
+		* could help deal with double spend attacks by reacting faster to merge the disputed forks
+		* depending on implementation, could reduce impact & risk of block-withholding attacks
+
+NECESSARY ADDITIONS TO STANDARD PoW
+-----------------------------------
+General:
+	1) Add "Eater" addresses, which don't have private keys, for Proof-of-Burn endpoints
+		-different eaters can have different characteristics, eg. entry to a different "league".
+	2) Add information in reward, lottery mechanisms to keep track of ELO, burn history, W/L record 
+	3) Write smart algorithms for burn fees, burn times, matchups/Elo, rewards, etc
+Mining:
+	1) Adjust miner to stop mining if it does not win current Lottery phase
+	2) Add in more hardware bottlenecks than processing speed & parallelism (eg. memory bandwidth, memory size, network speed, storage, etc)
+		-could borrow a *lot* from Dagger-Hashimoto (Ethash)
+	3) Require address-specific solutions, to eliminate Dagger-Hashimoto memory parallelism issues
+		-requires additional verification step at Node
+
+CURRENT PROBLEM:
+----------------
+"so the problem is a method to keep ASICs from mimicking 1000 separate GPUs (or keep GPUs from mimicking 1000 separate CPUs)
+Basically, if it's possible to open 1000 clients (or to write a mining client which automatically mines to 1000 separate addresses on 1000 separate threads, it's possible to circumvent my game mechanics & exploit it"
+
+POTENTIAL SOLUTION:
+-------------------
+	The Sybil-style exploit involving running a plurality of miner instances in parallel with different 
