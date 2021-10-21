@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2021-10-21T06:44:13.482Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36" etag="X9U6kNikNCTXPJmTRW4M" version="15.5.2" type="github" pages="2">
+<mxfile host="app.diagrams.net" modified="2021-10-21T06:44:39.565Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36" etag="vNvEcn7IGkgvaBsp2uiu" version="15.5.2" type="github" pages="2">
   <diagram id="b7jSxATwpJTcKXcA5Bqr" name="Page-1">
     <mxGraphModel dx="2062" dy="1126" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1200" background="#FFEDFE" math="0" shadow="0">
       <root>
@@ -229,7 +229,7 @@
     </mxGraphModel>
   </diagram>
   <diagram id="64EtVUdOGE44rSvDaNxi" name="Page-2">
-    <mxGraphModel dx="924" dy="536" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1200" background="#FFEDFE" math="0" shadow="0">
+    <mxGraphModel dx="1940" dy="1126" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1200" background="#FFEDFE" math="0" shadow="0">
       <root>
         <mxCell id="hpg4EXrTaAIhHeueer78-0" />
         <mxCell id="hpg4EXrTaAIhHeueer78-1" parent="hpg4EXrTaAIhHeueer78-0" />
@@ -351,8 +351,8 @@
             <mxPoint x="1000" y="212.5" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="KlTcoUdHrIrn6JZm1egi-94" value="&lt;ul&gt;&lt;li&gt;Elo Epochs contain Elo sub-epochs&lt;/li&gt;&lt;li&gt;Epoch length is a constant number of Blocks&lt;/li&gt;&lt;li&gt;A new random number is generated at each sub-epoch boundary by the Elo which finishes its Epoch, initiating the next Lottery for each sub-epoch&lt;/li&gt;&lt;li&gt;A &quot;dead Elo&quot; which fails to finish its lottery on-time allows continuation of current lotto numbers, &quot;black-marks&quot; the underperforming miners, and reduces difficulty &amp;amp; rewards&lt;/li&gt;&lt;li&gt;NOTE: Above-pictured model depicts bare-minimum ratio of Epoch to Sub-Epoch Length. Significantly higher ratios are likely more useful, especially when Elo-count is low.&lt;/li&gt;&lt;/ul&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
-          <mxGeometry x="40" y="635" width="710" height="130" as="geometry" />
+        <mxCell id="KlTcoUdHrIrn6JZm1egi-94" value="&lt;ul&gt;&lt;li&gt;Elo Epochs contain Elo sub-epochs&lt;/li&gt;&lt;li&gt;Epoch length is a constant number of Blocks&lt;/li&gt;&lt;li&gt;A new random number is generated at each sub-epoch boundary by the Elo which finishes its Epoch, initiating the next Lottery for each sub-epoch&lt;/li&gt;&lt;li&gt;A &quot;dead Elo&quot; which fails to finish its lottery on-time allows continuation of current lotto numbers, &quot;black-marks&quot; the underperforming miners, and reduces difficulty &amp;amp; rewards&lt;/li&gt;&lt;li&gt;NOTE: Above-pictured model depicts, for the sake of easy display, the bare-minimum ratio of Epoch to Sub-Epoch Length. Significantly higher ratios are likely more useful, especially when Elo-count is low.&lt;/li&gt;&lt;/ul&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
+          <mxGeometry x="40" y="635" width="710" height="155" as="geometry" />
         </mxCell>
         <mxCell id="KlTcoUdHrIrn6JZm1egi-95" value="" style="rounded=0;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;fillColor=#fff2cc;align=center;verticalAlign=middle;strokeColor=#d6b656;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
           <mxGeometry x="100" y="510" width="200" height="20" as="geometry" />
