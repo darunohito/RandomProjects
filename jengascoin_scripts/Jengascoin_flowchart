@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2021-10-21T06:34:42.621Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36" etag="e8IypqWXvNs6ddf5nniZ" version="15.5.2" type="github" pages="2">
+<mxfile host="app.diagrams.net" modified="2021-10-21T06:44:13.482Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36" etag="X9U6kNikNCTXPJmTRW4M" version="15.5.2" type="github" pages="2">
   <diagram id="b7jSxATwpJTcKXcA5Bqr" name="Page-1">
     <mxGraphModel dx="2062" dy="1126" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1200" background="#FFEDFE" math="0" shadow="0">
       <root>
@@ -229,7 +229,7 @@
     </mxGraphModel>
   </diagram>
   <diagram id="64EtVUdOGE44rSvDaNxi" name="Page-2">
-    <mxGraphModel dx="1338" dy="777" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1200" background="#FFEDFE" math="0" shadow="0">
+    <mxGraphModel dx="924" dy="536" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1200" background="#FFEDFE" math="0" shadow="0">
       <root>
         <mxCell id="hpg4EXrTaAIhHeueer78-0" />
         <mxCell id="hpg4EXrTaAIhHeueer78-1" parent="hpg4EXrTaAIhHeueer78-0" />
@@ -351,8 +351,8 @@
             <mxPoint x="1000" y="212.5" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="KlTcoUdHrIrn6JZm1egi-94" value="&lt;ul&gt;&lt;li&gt;Elo Epochs contain Elo sub-epochs&lt;/li&gt;&lt;li&gt;Epoch length is a constant number of Blocks&lt;/li&gt;&lt;li&gt;A new random number is generated at each sub-epoch boundary by the Elo which finishes its Epoch, initiating the next Lottery for each sub-epoch&lt;/li&gt;&lt;li&gt;A &quot;dead Elo&quot; which fails to finish its lottery on-time allows continuation of current lotto numbers, &quot;black-marks&quot; the underperforming miners, and reduces difficulty &amp;amp; rewards&lt;/li&gt;&lt;/ul&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
-          <mxGeometry x="40" y="635" width="590" height="130" as="geometry" />
+        <mxCell id="KlTcoUdHrIrn6JZm1egi-94" value="&lt;ul&gt;&lt;li&gt;Elo Epochs contain Elo sub-epochs&lt;/li&gt;&lt;li&gt;Epoch length is a constant number of Blocks&lt;/li&gt;&lt;li&gt;A new random number is generated at each sub-epoch boundary by the Elo which finishes its Epoch, initiating the next Lottery for each sub-epoch&lt;/li&gt;&lt;li&gt;A &quot;dead Elo&quot; which fails to finish its lottery on-time allows continuation of current lotto numbers, &quot;black-marks&quot; the underperforming miners, and reduces difficulty &amp;amp; rewards&lt;/li&gt;&lt;li&gt;NOTE: Above-pictured model depicts bare-minimum ratio of Epoch to Sub-Epoch Length. Significantly higher ratios are likely more useful, especially when Elo-count is low.&lt;/li&gt;&lt;/ul&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
+          <mxGeometry x="40" y="635" width="710" height="130" as="geometry" />
         </mxCell>
         <mxCell id="KlTcoUdHrIrn6JZm1egi-95" value="" style="rounded=0;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;fillColor=#fff2cc;align=center;verticalAlign=middle;strokeColor=#d6b656;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
           <mxGeometry x="100" y="510" width="200" height="20" as="geometry" />
@@ -502,8 +502,8 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="KlTcoUdHrIrn6JZm1egi-133" value="&lt;span&gt;Sub-epoch boundaries&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
-          <mxGeometry x="640" y="490" width="70" height="40" as="geometry" />
+        <mxCell id="KlTcoUdHrIrn6JZm1egi-133" value="&lt;span style=&quot;font-size: 10px;&quot;&gt;Sub-epoch boundaries&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=10;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
+          <mxGeometry x="640" y="490" width="70" height="30" as="geometry" />
         </mxCell>
         <mxCell id="KlTcoUdHrIrn6JZm1egi-134" value="" style="curved=1;endArrow=classic;html=1;rounded=0;fontFamily=Lucida Console;fontSize=12;fontColor=#000000;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="hpg4EXrTaAIhHeueer78-1" source="KlTcoUdHrIrn6JZm1egi-133">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
@@ -523,6 +523,57 @@
         </mxCell>
         <mxCell id="KlTcoUdHrIrn6JZm1egi-138" value="&lt;span&gt;*these solutions are Elo-specific&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
           <mxGeometry x="640" y="250" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="KlTcoUdHrIrn6JZm1egi-142" value="" style="rounded=0;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;fillColor=#f8cecc;align=center;verticalAlign=middle;strokeColor=#b85450;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
+          <mxGeometry x="100" y="510" width="40" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="KlTcoUdHrIrn6JZm1egi-145" value="" style="rounded=0;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;fillColor=#f8cecc;align=center;verticalAlign=middle;strokeColor=#b85450;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
+          <mxGeometry x="140" y="530" width="40" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="KlTcoUdHrIrn6JZm1egi-146" value="" style="rounded=0;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;fillColor=#f8cecc;align=center;verticalAlign=middle;strokeColor=#b85450;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
+          <mxGeometry x="180" y="550" width="40" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="KlTcoUdHrIrn6JZm1egi-147" value="" style="rounded=0;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;fillColor=#f8cecc;align=center;verticalAlign=middle;strokeColor=#b85450;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
+          <mxGeometry x="220" y="570" width="40" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="KlTcoUdHrIrn6JZm1egi-148" value="" style="rounded=0;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;fillColor=#f8cecc;align=center;verticalAlign=middle;strokeColor=#b85450;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
+          <mxGeometry x="260" y="590" width="40" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="KlTcoUdHrIrn6JZm1egi-149" value="" style="rounded=0;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;fillColor=#f8cecc;align=center;verticalAlign=middle;strokeColor=#b85450;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
+          <mxGeometry x="300" y="510" width="40" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="KlTcoUdHrIrn6JZm1egi-150" value="" style="rounded=0;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;fillColor=#f8cecc;align=center;verticalAlign=middle;strokeColor=#b85450;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
+          <mxGeometry x="340" y="530" width="40" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="KlTcoUdHrIrn6JZm1egi-151" value="" style="rounded=0;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;fillColor=#f8cecc;align=center;verticalAlign=middle;strokeColor=#b85450;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
+          <mxGeometry x="380" y="550" width="40" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="KlTcoUdHrIrn6JZm1egi-152" value="" style="rounded=0;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;fillColor=#f8cecc;align=center;verticalAlign=middle;strokeColor=#b85450;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
+          <mxGeometry x="420" y="570" width="40" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="KlTcoUdHrIrn6JZm1egi-153" value="" style="rounded=0;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=12;fillColor=#f8cecc;align=center;verticalAlign=middle;strokeColor=#b85450;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
+          <mxGeometry x="460" y="590" width="40" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="KlTcoUdHrIrn6JZm1egi-154" value="&lt;span style=&quot;font-size: 10px;&quot;&gt;Epoch-startup Burn &amp;amp; Random Number Submission Periods&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;labelBackgroundColor=none;fontFamily=Lucida Console;fontSize=10;" vertex="1" parent="hpg4EXrTaAIhHeueer78-1">
+          <mxGeometry x="380" y="460" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="KlTcoUdHrIrn6JZm1egi-155" value="" style="curved=1;endArrow=classic;html=1;rounded=0;fontFamily=Lucida Console;fontSize=12;fontColor=#000000;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="hpg4EXrTaAIhHeueer78-1" target="KlTcoUdHrIrn6JZm1egi-149">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="380" y="490" as="sourcePoint" />
+            <mxPoint x="245" y="510" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="355" y="480" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KlTcoUdHrIrn6JZm1egi-156" value="" style="curved=1;endArrow=classic;html=1;rounded=0;fontFamily=Lucida Console;fontSize=12;fontColor=#000000;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="hpg4EXrTaAIhHeueer78-1" source="KlTcoUdHrIrn6JZm1egi-154" target="KlTcoUdHrIrn6JZm1egi-146">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="370" y="480" as="sourcePoint" />
+            <mxPoint x="310" y="500" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="345" y="470" />
+            </Array>
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>
