@@ -1,164 +1,164 @@
-<mxfile host="app.diagrams.net" modified="2021-10-15T04:09:29.010Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36" etag="P4Nu08MqDTkpAOuH5sdl" version="15.5.2" type="github">
+<mxfile host="app.diagrams.net" modified="2021-10-21T03:27:41.412Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36" etag="d--26__S5OhTJb7POgD8" version="15.5.2" type="github">
   <diagram id="b7jSxATwpJTcKXcA5Bqr" name="Page-1">
-    <mxGraphModel dx="2426" dy="1325" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1200" background="#FFEDFE" math="0" shadow="0">
+    <mxGraphModel dx="2062" dy="1126" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1200" background="#FFEDFE" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-76" value="How to follow this guide:" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=18;fontColor=#6A009E;fillColor=none;align=left;verticalAlign=top;spacingLeft=20;fontStyle=1;spacingTop=5;" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-76" value="How to follow this guide:" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=18;fontColor=#6A009E;fillColor=none;align=left;verticalAlign=top;spacingLeft=20;fontStyle=1;spacingTop=5;" parent="1" vertex="1">
           <mxGeometry x="50" y="30" width="680" height="170" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.55;exitY=0.95;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-1" target="Ha_ghi7MtWiztKZYWCUw-17">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.55;exitY=0.95;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-1" target="Ha_ghi7MtWiztKZYWCUw-17" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-1" value="So you want to get into Jengascoin?" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=19;fontStyle=0" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-1" value="So you want to get into Jengascoin?" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=19;fontStyle=0" parent="1" vertex="1">
           <mxGeometry x="858" y="30" width="201" height="171.91" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-2" target="Ha_ghi7MtWiztKZYWCUw-7">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-2" target="Ha_ghi7MtWiztKZYWCUw-7" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;fontFamily=Lucida Console;fontSize=14;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-2" target="Ha_ghi7MtWiztKZYWCUw-10">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;fontFamily=Lucida Console;fontSize=14;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-2" target="Ha_ghi7MtWiztKZYWCUw-10" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.75;exitDx=0;exitDy=0;fontFamily=Lucida Console;fontSize=14;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-2" target="Ha_ghi7MtWiztKZYWCUw-9">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.75;exitDx=0;exitDy=0;fontFamily=Lucida Console;fontSize=14;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-2" target="Ha_ghi7MtWiztKZYWCUw-9" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;fontFamily=Lucida Console;fontSize=14;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-2" target="Ha_ghi7MtWiztKZYWCUw-8">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;fontFamily=Lucida Console;fontSize=14;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-2" target="Ha_ghi7MtWiztKZYWCUw-8" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-2" value="What kind of user are you?" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=12;" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-2" value="What kind of user are you?" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=12;" parent="1" vertex="1">
           <mxGeometry x="903" y="341.90999999999997" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-7" target="Ha_ghi7MtWiztKZYWCUw-26">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-7" target="Ha_ghi7MtWiztKZYWCUw-26" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-7" value="Creator" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=14;fontStyle=1" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-7" value="Creator" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=14;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="650" y="331.90999999999997" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-8" value="Miner" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=14;fontStyle=1" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-8" value="Miner" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=14;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="1018" y="421.90999999999997" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-9" value="Publisher" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=14;fontStyle=1" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-9" value="Publisher" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=14;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="783" y="421.90999999999997" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-10" value="Developer" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=14;fontStyle=1" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-10" value="Developer" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=14;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="1160" y="331.90999999999997" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-17" target="Ha_ghi7MtWiztKZYWCUw-2">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-17" target="Ha_ghi7MtWiztKZYWCUw-2" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-17" value="Step 1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fontFamily=Lucida Console;fontSize=14;" vertex="1" parent="1">
-          <mxGeometry x="803" y="211.91" width="310" height="110" as="geometry">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-17" value="Step 1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fontFamily=Lucida Console;fontSize=14;" parent="1" vertex="1">
+          <mxGeometry x="770" y="211.91" width="390" height="110" as="geometry">
             <mxRectangle x="385" y="160" width="80" height="30" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-18" value="a. Install the GUI Wallet" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;" vertex="1" parent="Ha_ghi7MtWiztKZYWCUw-17">
-          <mxGeometry y="30" width="310" height="20" as="geometry" />
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-18" value="a. Install the GUI Wallet" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;" parent="Ha_ghi7MtWiztKZYWCUw-17" vertex="1">
+          <mxGeometry y="30" width="390" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-19" value="b. Generate a wallet" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;" vertex="1" parent="Ha_ghi7MtWiztKZYWCUw-17">
-          <mxGeometry y="50" width="310" height="20" as="geometry" />
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-19" value="b. Generate a wallet" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;" parent="Ha_ghi7MtWiztKZYWCUw-17" vertex="1">
+          <mxGeometry y="50" width="390" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-20" value="c. Record the address *securely" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;" vertex="1" parent="Ha_ghi7MtWiztKZYWCUw-17">
-          <mxGeometry y="70" width="310" height="20" as="geometry" />
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-20" value="c. Record your wallet information securely*" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;" parent="Ha_ghi7MtWiztKZYWCUw-17" vertex="1">
+          <mxGeometry y="70" width="390" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-23" value="    *your private key is a secret!" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5],[0.5,-1];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;fontStyle=1" vertex="1" parent="Ha_ghi7MtWiztKZYWCUw-17">
-          <mxGeometry y="90" width="310" height="20" as="geometry" />
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-23" value="    *your private key is a secret!" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5],[0.5,-1];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;fontStyle=1" parent="Ha_ghi7MtWiztKZYWCUw-17" vertex="1">
+          <mxGeometry y="90" width="390" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-26" value="Creator Step 2" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fontFamily=Lucida Console;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-26" value="Creator Step 2" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fontFamily=Lucida Console;fontSize=14;" parent="1" vertex="1">
           <mxGeometry x="160" y="247.86" width="400" height="110" as="geometry">
             <mxRectangle x="385" y="160" width="80" height="30" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-27" value="a. Click the &quot;Mint&quot; tab to start NFT creation" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;" vertex="1" parent="Ha_ghi7MtWiztKZYWCUw-26">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-27" value="a. Click the &quot;Mint&quot; tab to start NFT creation" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;" parent="Ha_ghi7MtWiztKZYWCUw-26" vertex="1">
           <mxGeometry y="30" width="400" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-28" value="b. Fill the Title (name of asset), Developer/ Creator (you), and Supply (number of assets) " style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;whiteSpace=wrap;" vertex="1" parent="Ha_ghi7MtWiztKZYWCUw-26">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-28" value="b. Fill the Title (name of asset), Developer/ Creator (you), and Supply (number of assets) " style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;whiteSpace=wrap;" parent="Ha_ghi7MtWiztKZYWCUw-26" vertex="1">
           <mxGeometry y="50" width="400" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-29" value="c. Add an image icon to depict your creation" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5],[0.5,-1],[0.5,1]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;" vertex="1" parent="Ha_ghi7MtWiztKZYWCUw-26">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-29" value="c. Add an image icon to depict your creation" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5],[0.5,-1],[0.5,1]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;" parent="Ha_ghi7MtWiztKZYWCUw-26" vertex="1">
           <mxGeometry y="90" width="400" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-38" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-33" target="Ha_ghi7MtWiztKZYWCUw-37">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-38" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-33" target="Ha_ghi7MtWiztKZYWCUw-37" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-39" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-33" target="Ha_ghi7MtWiztKZYWCUw-36">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-39" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-33" target="Ha_ghi7MtWiztKZYWCUw-36" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-33" value="Are you renting the asset temporarily?" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=12;" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-33" value="Are you renting the asset temporarily?" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=12;" parent="1" vertex="1">
           <mxGeometry x="300" y="740" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-68" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;fontColor=#FF2414;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-36" target="Ha_ghi7MtWiztKZYWCUw-65">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-68" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;fontColor=#FF2414;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-36" target="Ha_ghi7MtWiztKZYWCUw-65" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-36" value="No" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=16;fontStyle=1" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-36" value="No" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=16;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="160" y="730" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-67" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;fontColor=#FF2414;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-37" target="Ha_ghi7MtWiztKZYWCUw-63">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-67" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;fontColor=#FF2414;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-37" target="Ha_ghi7MtWiztKZYWCUw-63" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-37" value="Yes" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=16;fontStyle=1" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-37" value="Yes" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=16;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="440" y="730" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-42" target="Ha_ghi7MtWiztKZYWCUw-44">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-42" target="Ha_ghi7MtWiztKZYWCUw-44" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-41" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-42" target="Ha_ghi7MtWiztKZYWCUw-43">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-41" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-42" target="Ha_ghi7MtWiztKZYWCUw-43" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-52" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;fontFamily=Lucida Console;fontSize=14;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-42" target="Ha_ghi7MtWiztKZYWCUw-51">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-52" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;fontFamily=Lucida Console;fontSize=14;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-42" target="Ha_ghi7MtWiztKZYWCUw-51" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-42" value="How would you like to control asset resale?" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=12;" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-42" value="How would you like to control asset resale?" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=12;" parent="1" vertex="1">
           <mxGeometry x="300" y="405.95" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-57" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-43" target="Ha_ghi7MtWiztKZYWCUw-55">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-57" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-43" target="Ha_ghi7MtWiztKZYWCUw-55" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-43" value="No restrictions" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=14;fontStyle=1" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-43" value="No restrictions" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=14;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="160" y="395.95" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-58" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-44" target="Ha_ghi7MtWiztKZYWCUw-53">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-58" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-44" target="Ha_ghi7MtWiztKZYWCUw-53" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-44" value="No resale,&lt;br style=&quot;font-size: 14px;&quot;&gt;ever" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=14;fontStyle=1" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-44" value="No resale,&lt;br style=&quot;font-size: 14px;&quot;&gt;ever" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=14;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="440" y="395.95" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-46" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-29" target="Ha_ghi7MtWiztKZYWCUw-42">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-46" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-29" target="Ha_ghi7MtWiztKZYWCUw-42" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-47" value="Creator Step 3.b" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fontFamily=Lucida Console;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-47" value="Creator Step 3.b" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fontFamily=Lucida Console;fontSize=14;" parent="1" vertex="1">
           <mxGeometry x="265" y="600" width="190" height="90" as="geometry">
             <mxRectangle x="385" y="160" width="80" height="30" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-48" value="Enter date &amp; time in &quot;Exclusivity Expiration&quot; field" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5],[0.5,1]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;whiteSpace=wrap;" vertex="1" parent="Ha_ghi7MtWiztKZYWCUw-47">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-48" value="Enter date &amp; time in &quot;Exclusivity Expiration&quot; field" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5],[0.5,1]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;whiteSpace=wrap;" parent="Ha_ghi7MtWiztKZYWCUw-47" vertex="1">
           <mxGeometry y="30" width="190" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-59" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-51" target="Ha_ghi7MtWiztKZYWCUw-47">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-59" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-51" target="Ha_ghi7MtWiztKZYWCUw-47" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-51" value="Wait period" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=14;fontStyle=1" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-51" value="Wait period" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=14;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="300" y="490" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-53" value="Creator Step 3.c" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fontFamily=Lucida Console;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-53" value="Creator Step 3.c" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fontFamily=Lucida Console;fontSize=14;" parent="1" vertex="1">
           <mxGeometry x="440" y="485" width="190" height="90" as="geometry">
             <mxRectangle x="385" y="160" width="80" height="30" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-54" value="CHECK BACK" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5],[0.5,1]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;whiteSpace=wrap;" vertex="1" parent="Ha_ghi7MtWiztKZYWCUw-53">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-54" value="CHECK BACK" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5],[0.5,1]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;whiteSpace=wrap;" parent="Ha_ghi7MtWiztKZYWCUw-53" vertex="1">
           <mxGeometry y="30" width="190" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-55" value="Creator Step 3.a" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fontFamily=Lucida Console;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-55" value="Creator Step 3.a" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fontFamily=Lucida Console;fontSize=14;" parent="1" vertex="1">
           <mxGeometry x="90" y="485" width="190" height="90" as="geometry">
             <mxRectangle x="385" y="160" width="80" height="30" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-56" value="Leave &quot;Exclusivity Expiration&quot; field blank." style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5],[0.5,1]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;whiteSpace=wrap;" vertex="1" parent="Ha_ghi7MtWiztKZYWCUw-55">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-56" value="Leave &quot;Exclusivity Expiration&quot; field blank." style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5],[0.5,1]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;whiteSpace=wrap;" parent="Ha_ghi7MtWiztKZYWCUw-55" vertex="1">
           <mxGeometry y="30" width="190" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-60" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;fontColor=#FF2414;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-48" target="Ha_ghi7MtWiztKZYWCUw-33">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-60" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;fontColor=#FF2414;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-48" target="Ha_ghi7MtWiztKZYWCUw-33" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-61" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;fontColor=#FF2414;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-54" target="Ha_ghi7MtWiztKZYWCUw-33">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-61" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;fontColor=#FF2414;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-54" target="Ha_ghi7MtWiztKZYWCUw-33" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="535" y="710" />
@@ -166,7 +166,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-62" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;fontColor=#FF2414;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-56" target="Ha_ghi7MtWiztKZYWCUw-33">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-62" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=14;fontColor=#FF2414;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-56" target="Ha_ghi7MtWiztKZYWCUw-33" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="185" y="710" />
@@ -174,55 +174,55 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-63" value="Creator Step 4.b" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fontFamily=Lucida Console;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-63" value="Creator Step 4.b" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fontFamily=Lucida Console;fontSize=14;" parent="1" vertex="1">
           <mxGeometry x="370" y="850" width="190" height="90" as="geometry">
             <mxRectangle x="385" y="160" width="80" height="30" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-64" value="Enter rental period in the &quot;Asset Expiration&quot; field." style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5],[0.5,1]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;whiteSpace=wrap;" vertex="1" parent="Ha_ghi7MtWiztKZYWCUw-63">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-64" value="Enter rental period in the &quot;Asset Expiration&quot; field." style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5],[0.5,1]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;whiteSpace=wrap;" parent="Ha_ghi7MtWiztKZYWCUw-63" vertex="1">
           <mxGeometry y="30" width="190" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-65" value="Creator Step 4.a" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fontFamily=Lucida Console;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-65" value="Creator Step 4.a" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fontFamily=Lucida Console;fontSize=14;" parent="1" vertex="1">
           <mxGeometry x="160" y="850" width="190" height="90" as="geometry">
             <mxRectangle x="385" y="160" width="80" height="30" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-66" value="Leave &quot;Asset Expiration&quot; field blank." style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5],[0.5,1]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;whiteSpace=wrap;" vertex="1" parent="Ha_ghi7MtWiztKZYWCUw-65">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-66" value="Leave &quot;Asset Expiration&quot; field blank." style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5],[0.5,1]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;whiteSpace=wrap;" parent="Ha_ghi7MtWiztKZYWCUw-65" vertex="1">
           <mxGeometry y="30" width="190" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-69" value="Instructions" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fontFamily=Lucida Console;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-69" value="Instructions" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fontFamily=Lucida Console;fontSize=14;" parent="1" vertex="1">
           <mxGeometry x="455" y="120" width="230" height="50" as="geometry">
             <mxRectangle x="385" y="160" width="80" height="30" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-70" value="Steps" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;" vertex="1" parent="Ha_ghi7MtWiztKZYWCUw-69">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-70" value="Steps" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontFamily=Lucida Console;fontSize=14;" parent="Ha_ghi7MtWiztKZYWCUw-69" vertex="1">
           <mxGeometry y="30" width="230" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-84" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;fontColor=#6A009E;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-73" target="Ha_ghi7MtWiztKZYWCUw-69">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-84" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;fontColor=#6A009E;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-73" target="Ha_ghi7MtWiztKZYWCUw-69" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-73" value="Answer" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=14;fontStyle=1" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-73" value="Answer" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=14;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="300" y="104.99999999999999" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-82" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;fontColor=#6A009E;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-74" target="Ha_ghi7MtWiztKZYWCUw-73">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-82" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;fontColor=#6A009E;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-74" target="Ha_ghi7MtWiztKZYWCUw-73" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-74" value="Question" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=16;" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-74" value="Question" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Lucida Console;fontSize=16;" parent="1" vertex="1">
           <mxGeometry x="140" y="114.99999999999999" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-80" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;fontColor=#6A009E;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-77" target="Ha_ghi7MtWiztKZYWCUw-78">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-80" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;fontColor=#6A009E;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-77" target="Ha_ghi7MtWiztKZYWCUw-78" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-77" value="1. Read the Question" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Lucida Console;fontSize=16;fontColor=#6A009E;" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-77" value="1. Read the Question" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Lucida Console;fontSize=16;fontColor=#6A009E;" parent="1" vertex="1">
           <mxGeometry x="145" y="65" width="110" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-81" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;fontColor=#6A009E;" edge="1" parent="1" source="Ha_ghi7MtWiztKZYWCUw-78" target="Ha_ghi7MtWiztKZYWCUw-79">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-81" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Lucida Console;fontSize=16;fontColor=#6A009E;" parent="1" source="Ha_ghi7MtWiztKZYWCUw-78" target="Ha_ghi7MtWiztKZYWCUw-79" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-78" value="2. Pick the best answer" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Lucida Console;fontSize=16;fontColor=#6A009E;" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-78" value="2. Pick the best answer" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Lucida Console;fontSize=16;fontColor=#6A009E;" parent="1" vertex="1">
           <mxGeometry x="305" y="65" width="110" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="Ha_ghi7MtWiztKZYWCUw-79" value="3. Follow the instructions" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Lucida Console;fontSize=16;fontColor=#6A009E;" vertex="1" parent="1">
+        <mxCell id="Ha_ghi7MtWiztKZYWCUw-79" value="3. Follow the instructions" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Lucida Console;fontSize=16;fontColor=#6A009E;" parent="1" vertex="1">
           <mxGeometry x="502.5" y="65" width="135" height="40" as="geometry" />
         </mxCell>
       </root>
