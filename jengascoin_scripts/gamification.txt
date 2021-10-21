@@ -53,7 +53,8 @@ Mining:
 	1) Adjust miner to stop mining if it does not win current Lottery phase
 	2) Add in more hardware bottlenecks than processing speed & parallelism (eg. memory bandwidth, memory size, network speed, storage, etc)
 		-could borrow a *lot* from Dagger-Hashimoto (Ethash)
-	3) Require address-specific solutions, to eliminate Dagger-Hashimoto memory parallelism issues
+	3) Implement Verifiable Delay Function (VDF) with Elo-specific difficulty value, which is solved on-chain by miners prior to block solutions.
+	4) Require address-specific block solutions, to eliminate Dagger-Hashimoto memory parallelism issues
 		-requires additional verification step at Node
 
 CURRENT PROBLEM:
@@ -63,4 +64,4 @@ Basically, if it's possible to open 1000 clients (or to write a mining client wh
 
 POTENTIAL SOLUTION:
 -------------------
-	The Sybil-style exploit involving running a plurality of miner instances in parallel with different 
+	The Sybil-style exploit involving running a plurality of miner instances in parallel with different target addresses can be solved by using a modified Dagger-Hashimoto
