@@ -1,1 +1,1 @@
-testhash = hash("SHA224",native2unicode(keyed_bytestream_hash_num))
+pMod4_3_sqrt(2,7)
