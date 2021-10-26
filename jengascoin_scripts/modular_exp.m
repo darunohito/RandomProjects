@@ -1,5 +1,7 @@
 function result = modular_exp (x, y, p)
-  
+%% "x" argument designed to take uint32 single integers,
+%%    OR
+%% uint32 vectors of any length, provided x, y, and p are the **same length**
 %% Utility function to do modular exponentiation.
 %% It returns (x^y) % p
     result = 1;        % Initialize result
