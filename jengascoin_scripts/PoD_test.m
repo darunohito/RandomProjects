@@ -46,14 +46,17 @@ for index = delay_difficulty:-1:delay_difficulty-delay_padding+1
 endfor
 keyed_bytestream_hash_num = bitor(keyed_bytestream_hash_num,bitpad);
 
-% find the nearest prime >= keyed_bytestream_hash_num
-while(notprime)
+% find the nearest prime >= keyed_bytestream_hash_num 
+% which also satisfies (p = 3)mod4, or "3 = mod(p,4)
+while(notprime || (3 != mod(keyed_bytestream_hash_num,4)))
   numtries = numtries + 1;
   notprime = ~isPrimeMiller(keyed_bytestream_hash_num,7);
-  if(notprime)
+  if(notprime || (3 != mod(keyed_bytestream_hash_num,4)))
     keyed_bytestream_hash_num = keyed_bytestream_hash_num + 2;
   endif
 endwhile
 fprintf("Found prime after %d tries\n",numtries);
-fprintf("Working prime is %d (binary: %b)\n",keyed_bytestream_hash_num,dec2bin(keyed_bytestream_hash_num));
+fprintf("Working prime is %d (binary: %s)\n",keyed_bytestream_hash_num,num2str(dec2bin(keyed_bytestream_hash_num)));
+fprintf("Does this satisfy (p = 3) mod 4? 3 =? %d\n", mod(keyed_bytestream_hash_num,4));
+fprintf("FIRST VERIFICATION OUTPUT: Hash of prime = %s\n", hash("SHA224",native2unicode(keyed_bytestream_hash_num)));
 
