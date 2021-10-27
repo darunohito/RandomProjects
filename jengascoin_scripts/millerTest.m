@@ -23,9 +23,8 @@ function retval = millerTest (d, n)
     % (ii)  (x^2) % n is not 1
     % (iii) (x^2) % n is not n-1
     while (d != n-1)
-        x = mod((x*x),n);
+        x = prodmod(uint64([x x]),uint64(n));
         d = d * 2;
- 
         if (x == 1)
           retval = false;
           return;

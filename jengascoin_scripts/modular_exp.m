@@ -3,14 +3,25 @@ function result = modular_exp (x, y, p)
 %% It returns (x^y) % p
     result = 1;        % Initialize result
     x = uint64(mod(x,p));   % Update x if >= p
+    
+    restest = result; %% TEST VALS
+    xtest = x; %% TEST VALS
     while (y > 0)
         % If y is odd, multiply x with result
         if (bitand(y,1))
-            result = uint64(quadmod(result,x,p));
+            result = uint64(prodmod(uint64([result x]),uint64(p)));
+            restest = uint64(mod((restest*x),p)); %% TEST VALS
         endif
         % y must be even now
         y = bitshift(y,-1); % y = y/2
-        x = uint64(quadmod(x,x,p));
+        x = uint64(prodmod(uint64([x x]),uint64(p)));
+        xtest = uint64(mod((xtest^2),p)); %% TEST VALS
+        if(result != restest || x != xtest)
+          warning("prodmod and mod do not match!\
+          \n x = %d ; y = %d ; p = %d ;\
+          \n result = %d, restest = %d, x = %d, xtest = %d\n",...
+          x,y,p,result, restest, x, xtest);
+        endif
     endwhile
     result = floor(result);
 endfunction
