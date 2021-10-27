@@ -1,7 +1,4 @@
 function result = modular_exp (x, y, p)
-%% "x" argument designed to take uint32 single integers,
-%%    OR
-%% uint32 vectors of any length, provided x, y, and p are the **same length**
 %% Utility function to do modular exponentiation.
 %% It returns (x^y) % p
     result = 1;        % Initialize result
@@ -9,11 +6,11 @@ function result = modular_exp (x, y, p)
     while (y > 0)
         % If y is odd, multiply x with result
         if (bitand(y,1))
-            result = uint64(mod((result*x),p));
+            result = uint64(quadmod(result,x,p));
         endif
         % y must be even now
         y = bitshift(y,-1); % y = y/2
-        x = uint64(mod((x*x),p));
+        x = uint64(quadmod(x,x,p));
     endwhile
     result = floor(result);
 endfunction
