@@ -1,0 +1,1 @@
+.\php.exe -c "php.ini" miner pool http://pool.jengas.io JAEynPtqrKuNRUNgZjN9QgbqjsDcbtQSRfZ8sd
