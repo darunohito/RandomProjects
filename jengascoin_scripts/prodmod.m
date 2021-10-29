@@ -5,13 +5,18 @@
 % (x1 * x2)mod(y) == ((x1)mod(y) * (x2)mod(y))mod(y)
 % (x1 * x2 * x3)mod(y) == ((((x1)mod(y) * (x2)mod(y))mod(y)) * (x3)mod(y))mod(y)
 function modulus = prodmod (x, y) 
-  factor_list = uint64([]);
-  for i1 = 1:length(x)
-    factor_list = uint64(vertcat(factor_list,allfactors(x(i1))));
-  endfor
-  unique_factors = unique(factor_list);
-  mods = mod(unique_factors,y);
-  while(sum(log2(mods)) > 64)
+  factor_list = {};
+  
+  
+  % [(a mod n) + (b mod n)] == (a + b) mod n
+  % [(a mod n) * (b mod n)] == (a * b) mod n
+  while(sum(factor_list{:,4}) > 64)
+    for i1 = 1:length(x)
+      factor_list{i1,1} = x(i1); % store x values
+      factor_list{i1,2} = uint64(factor(x(i1))); % store factors
+      factor_list{i1,3} = mod(factor_list{i1,2},y); % store mods of factors
+      factor_list{i1,4} = log2(x(i1)); % store bit-length of x values
+    endfor
     fprintf("current num bits: %d",sum(log2(mods)));
     mods_len = length(mods);
     diag_vector = ones(mods_len,1);
@@ -33,7 +38,7 @@ function modulus = prodmod (x, y)
     
   endwhile
   
-  modulus = mod(prod(mods),y)
+  modulus = mod(prod(prod(factor_list{:,3})),y)
 ##  max_iterations = 100; % not yet sure how many are needed
 ##  native_int_size = 64; % 64-bit is native to octave
 ##  
