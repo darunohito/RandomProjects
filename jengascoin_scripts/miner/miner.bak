@@ -146,7 +146,7 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 
         $this->height = $data['height'];
         $max_target = bchexdec('0x00000000FFFF0000000000000000000000000000000000000000000000000000');
-		$target = bcsub($max_target, $this->difficulty);
+		$target = bcdiv($max_target, $this->difficulty);
 		if(!isset($pooltarget))
 		{
 			$pooltarget = bcmul($target, "$pt");
@@ -277,7 +277,7 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 				$this->best = $result;
 			}
 			$max_target = bchexdec('0x00000000FFFF0000000000000000000000000000000000000000000000000000');
-			$target = $max_target - $this->difficulty;
+			$target = bcdiv($max_target, $this->difficulty);
 			if(!isset($pooltarget))
 			{
 				$pooltarget = bcmul($target, "$pt");
