@@ -119,7 +119,10 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
     {
 		global $noshare_time;
 		global $pooltarget;
+<<<<<<< Updated upstream
 		global $pt;
+=======
+>>>>>>> Stashed changes
         $this->lastUpdate = time();
 
         echo "--> Updating mining info\n";
@@ -146,10 +149,17 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 
         $this->height = $data['height'];
         $max_target = bchexdec('0x00000000FFFF0000000000000000000000000000000000000000000000000000');
+<<<<<<< Updated upstream
 		$target = bcsub($max_target, $this->difficulty);
 		if(!isset($pooltarget))
 		{
 			$pooltarget = bcmul($target, "$pt");
+=======
+		$target = bcdiv($max_target, $this->difficulty);
+		if(!isset($pooltarget))
+		{
+			$pooltarget = bcmul($target, 10000000000000000);
+>>>>>>> Stashed changes
 		}
 		if ($target < 1) {	
 			$target = 1;
@@ -233,7 +243,10 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 		global $share_time;
 		global $last_share_time;
 		global $pooltarget;
+<<<<<<< Updated upstream
 		global $pt;
+=======
+>>>>>>> Stashed changes
 		$this->best = bchexdec('0x00000000FFFF0000000000000000000000000000000000000000000000000000');
         $this->allTime = microtime(true);
         $this->beginTime = time();
@@ -277,10 +290,17 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 				$this->best = $result;
 			}
 			$max_target = bchexdec('0x00000000FFFF0000000000000000000000000000000000000000000000000000');
+<<<<<<< Updated upstream
 			$target = $max_target - $this->difficulty;
 			if(!isset($pooltarget))
 			{
 				$pooltarget = bcmul($target, "$pt");
+=======
+			$target = bcdiv($max_target, $this->difficulty);
+			if(!isset($pooltarget))
+			{
+				$pooltarget = bcmul($target, 10000000000000000);
+>>>>>>> Stashed changes
 			}
 			if ($target < 1) {
 				$target = 1;
@@ -325,6 +345,10 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 			if ($this->type == self::MODE_POOL) {
 				if((time() - $noshare_time) > 30)
 				{
+<<<<<<< Updated upstream
+=======
+					echo "\033[31m--> Increasing pool target by 10% $pooltarget\033[0m\n";
+>>>>>>> Stashed changes
 					$pooltarget = bcadd($pooltarget, bcmul($pooltarget, 0.1));
 					$noshare_time = time();
 					echo "\033[31m--> Increased pool target by 10% $pooltarget\033[0m\n";
