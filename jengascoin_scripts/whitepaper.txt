@@ -103,6 +103,7 @@ Body:
 			[2] reduced hardware cooling requirements due to short load periods (equal to sub-epoch length)
 			[3] lengthened viability of lower-efficiency mining hardware, potentially reducing mining e-waste
 			[4] shifts mining cost/benefit analysis to capital investment and away from electricity rates, which may reduce geographical concentration of mining operations.
+		- The Lottery Phase adds additional complexity to an attempt at a 51% attack, reducing the predi
 		- The Buy-In, Lottery, and Phase 3 Mining subsequent reward reductions combine to forcibly reduce profitability of highly-centralized mining operations:
 			[1] The Buy-In phase will force pools to develop a method of disbursing wallet address-specific assignments to their miners to maintain a proportionate solve-rate to their pool hashrate. This will also inadvertantly force pools to openly transmit their wallet addresses to their miners, increasing transparency.
 			[2] The desired hashrate-per-wallet ratio can be baked into the blockchain through the Buy-In difficulty, with diminishing returns for higher-power miners.
