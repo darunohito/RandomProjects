@@ -52,7 +52,8 @@ endif
 % and make sure the number satisfies (p = 3)mod4, or "3 = mod(p,4)"
 while(notprime)
   keyed_bytestream_hash_num = keyed_bytestream_hash_num + 4;
-  notprime = ~isPrimeMiller(keyed_bytestream_hash_num,20);
+  %notprime = ~isPrimeMiller(keyed_bytestream_hash_num,20);
+  notprime = ~isprime(keyed_bytestream_hash_num,20);
   numtries = numtries + 1
 endwhile
 p = keyed_bytestream_hash_num;

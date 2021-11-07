@@ -1,14 +1,12 @@
-max_target_log = log2(hex2dec("00000000FFFF0000000000000000000000000000000000000000000000000000"))
-max_target = hex2dec("00000000FFFF0000000000000000000000000000000000000000000000000000")
-max_target2 = hex2dec("FFFF0000000000000000000000000000000000000000000000000000")
+% test code
+inputs = ['PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCyfwKjMG1Fqak3VJQmPDWHTopuqyP7EPEkMBdE6QY4BUScCAhfxDirgmFVPLaKVAEZBuva9dNgzBAAM11YZn1ALi1',
+'PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCxsR7Zup31zZXy8NsHSSJbgQnPgHupMGgpZfCNtDVWJzAjx65gw6NXEmiow4R7w4EpreyPZpkSQDn14h7xRDrdtNG',
+'PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCx9BmnsqRpogkmeLX5DAVPXeEov5NThLTNtYg61ybfnVnoAZgCZZsXaCgBKgxQeoht19e87WKHw8KhC8idL6uveKb'];
 
-diff_log = log2(10022262709384866483693408155838342387914175228323315009883772174)
-diff = 6007574095768147553250721672589138037977792
-target = 2^(max_target_log - diff_log)
+integers = base58(inputs,'decode');
+input_test = base58(integers,'encode');
 
-arbtarg = 1000000000`
-arbtarg_log = log2(arbtarg)
-arbdiff = 2348234
-arbdiff_log = log2(arbdiff)
-target = arbtarg - arbdiff
-target_logged = 2^(arbtarg_log-arbdiff_log)
+if(strcmp(inputs,input_test))
+  printf("encode/decode results match!\n");
+endif
+

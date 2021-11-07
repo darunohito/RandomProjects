@@ -6,15 +6,18 @@ function retval = millerTest (d, n)
 % for some r >= 1
     % Pick a random number in [2..n-2]
     % Corner cases make sure that n > 4
-    a = 2 + round(rand(1) * (n-2-eps));
+    %a = 2 + round(rand(1) * (n-2-eps));
+    a = 2 + round(sym(rand(1),'f') * (n-4));
  
     % Compute a^d % n
-    x = modular_exp(a, d, n);
+    %x = modular_exp(a, d, n);
+    x = powermod(a, d, n);
+    %x = mod(a^d,n);
  
     if (x == 1  || x == n-1)
        retval = true;
        return;
-     endif
+    endif
      
  
     % Keep squaring x while one of the following doesn't
@@ -23,7 +26,9 @@ function retval = millerTest (d, n)
     % (ii)  (x^2) % n is not 1
     % (iii) (x^2) % n is not n-1
     while (d != n-1)
-        x = prodmod(uint64([x x]),uint64(n));
+        %x = prodmod(uint64([x x]),uint64(n));
+        x = powermod(x,2,floor(n));
+        %x = mod(x^2,floor(n));
         d = d * 2;
         if (x == 1)
           retval = false;
