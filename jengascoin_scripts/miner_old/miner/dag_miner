@@ -121,7 +121,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		$base_str = var_export($base, true);
 		$dag_str = var_export($dagger, true);
 		$var = "<?php\n\n\$dagger_cache = $dag_str;\n\$base_cache = $base_str\n?>";
-		file_put_contents('DAG.txt', $var);
+		file_put_contents('DAG.php', $var);
 		
 		
 		//mine the DAG
