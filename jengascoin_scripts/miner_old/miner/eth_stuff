@@ -4,13 +4,14 @@ require('blake3_optimized.php');
 use BLAKE3;
 
 ini_set("memory_limit", "8G");
-$NUM_BITS = 512
+$NUM_BITS = 512;
 
 // See https://github.com/ethereum/wiki/wiki/Dagger-Hashimoto#dagger-graph-building
 
-$SAFE_PRIME_512 = 2**512 - 38117     # Largest Safe Prime less than 2**512
+// $SAFE_PRIME_512 = 2**512 - 38117;     # Largest Safe Prime less than 2**512
 class Miner
 {
+	public const P = 2**512 - 38117;              # Safe Prime for hashing and random number generation
 	public const Gb = 999948288 * 8; // NUM_BITS per gigabit, multiple of 65536
 	public const n = 4000055296 * 8; // NUM_BITS,  # Size of the dataset (4 Gigabytes); MUST BE MULTIPLE OF 65536
     public const n_inc = 65536;                   # Increment in value of n per period; MUST BE MULTIPLE OF 65536 
@@ -21,7 +22,6 @@ class Miner
     private $k;                          # Number of parents of a node
     private $w;                         # Used for modular exponentiation hashing
     private $accesses;                 # Number of dataset accesses during hashimoto
-    public const P = strval($SAFE_PRIME_512);              # Safe Prime for hashing and random number generation
 	private $prime; # Experimental prime value, not yet implemented
 	
 	//from old miner
@@ -54,6 +54,8 @@ class Miner
      */
     public function __construct($type, $size, $node, $public_key, $private_key)
     {	
+		var_dump($argv);
+		echo "in constructor\n";
 		$this->outputHeader();
 		$this->checkDependencies();
 		
@@ -66,7 +68,7 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
             exit;
         }
 		if ((log($size,2) % 1) != 0) {
-			$size = 2^(floor(log($size,2)))
+			$size = 2^(floor(log($size,2)));
 			echo "DAG size rounded down to nearest power of 2\n";
 		}
 			
@@ -95,6 +97,12 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
 		
 		$nonce = mine($dagger);
 		echo "nonce found: $nonce\n";
+		$good_nonce = verify($dagger, $this->block, $nonce);
+		if($good_nonce < 0) {
+			echo "nonce good!\n";
+		} else {
+			echo "nonce bad >:(\n";
+		}
 	}
 	
 	/**
@@ -121,7 +129,7 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
 		$this->diff = 2**14;
 		$this->epochtime = 100000;
 		$this->accesses = 200; 
-		$this->cache_size =  = 2500;
+		$this->cache_size = 2500;
 		$this->k = 1; 
 		$this->w = w; 
     }
@@ -158,16 +166,16 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
 	public function produce_dag(string $seed, integer $length) 
 	{
 		$b3 = new BLAKE3();
-		$picker = $init = bcpowmod($b3->hash($seed,'64'), $this->w, P);
+		$picker = $init = bcpowmod($b3->hash($seed,'64'), $this->w, strval(P));
 		$o = $init;
 			
 		for($i=1; $i<$length; $i++) {
 			// $x = $picker = ($picker * $init) % P
-			$x = $picker = bcmod(bcmul($picker,$init),P)
+			$x = $picker = bcmod(bcmul($picker,$init),strval(P));
 			for($i2=0; $i2++; $i2<$this->k) {
 				$x ^= $o[(int)(bcmod($x,strval($i)))];
 			}
-			$o .= bcpowmod($x, strval($this->w), P));
+			$o .= bcpowmod($x, strval($this->w), strval(P));
 		}
 		return $o;
 	}
@@ -182,17 +190,20 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
 		{
 			//$result = hashimoto($daggerset, get_dagsize(params, block),params, decode_int(block.prevhash), $nonce);
 			$result = hashimoto($daggerset, bcmul($this->size,strval(Gb)),$this->block, $nonce);
-			if (bccomp(bcmul($result,$this->diff),strval(2**256)) <= 0) {
+			if (bccomp(bcmul($result,$this->diff),strval(2**256)) <= 0) 
+			{
 				break;
 			}
 			$nonce = bcadd($nonce,1);
-			if (bccomp($nonce,strval(2**64)) > 0) {
+			if (bccomp($nonce,strval(2**64)) > 0) 
+			{
 				$nonce = 0;
 			}
 			$nonces_tried++;
 			if(mod($nonces_tried,10) == 0)
-				echo "10 more nonces tried\n"
-			endif
+			{
+				echo "10 more nonces tried\n";
+			}
 		}
 		return $nonce;
 	}
@@ -204,15 +215,16 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
 		$mix = $b3->hash($nonce.$header,'64');
 		for($i=0; $i<$this->accesses; $i++) {
 			//mix ^= dag[m + (mix % 2**64) % m]
-			$mix = gmp_xor($mix,$dag[bcadd($m,bcmod((bcmod($mix,strval(2**64))),$m))]
+			$mix = gmp_xor($mix,$dag[bcadd($m,bcmod((bcmod($mix,strval(2**64))),$m))]);
 		}
 		return $b3->hash($b3->hash(mix,'64'),'64');
 	}
 	
-	public function verify($daggerset, $block, $nonce) {
-    $result = hashimoto($daggerset, bcmul($this->size,strval(Gb)),
-                       decode_int(block.prevhash), $nonce)
-    return bccomp(bcmul($result,$this->diff), strval(2**256))
+	public function verify($daggerset, $block, $nonce) 
+	{
+		$result = hashimoto($daggerset, bcmul($this->size,strval(Gb)),$this->block, $nonce);
+		return bccomp(bcmul($result,$this->diff), strval(2**256));
+	}
 	
 	/**
      * @return bool
@@ -281,7 +293,6 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
 		unset($b);
         return true;
     }
-}
 
 
 /*
@@ -418,37 +429,9 @@ function light_verify(params, header, nonce) {
             return chr($ascii);
         }, $converted));
     }
-
-    /**
-     * Check for the required dependencies.
-     */
-    public function checkDependencies()
-    {
-        if (!extension_loaded("gmp")) {
-            die("The GMP PHP extension is missing.");
-        }
-
-        if (!extension_loaded("openssl")) {
-            die("The OpenSSL PHP extension is missing.");
-        }
-
-        if (floatval(phpversion()) < 7.2) {
-            die("The minimum PHP version required is 7.2.");
-        }
-    }
-
-    /**
-     * Output the miner header text.
-     */
-    public function outputHeader()
-    {
-        echo "######################\n";
-        echo "# Jengascoin Miner   #\n";
-        echo "# www.jengas.io      #\n";
-        echo "######################\n";
-    }
-
 }
+
+
 // BCmath version for huge numbers
 function bc_arb_encode($num, $basestr) {
     if( ! function_exists('bcadd') ) {
