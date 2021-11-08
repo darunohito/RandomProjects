@@ -10,9 +10,9 @@ function retval = isPrimeMiller (n, k)
       retval = true;
       return;
     endif
- 
+    n = sym(n);
     % Find r such that n = 2^d * r + 1 for some r >= 1
-    d = uint64(n - 1);
+    d = n - 1;
     while (mod(d,2) == 0)
       d = d / 2;
     endwhile

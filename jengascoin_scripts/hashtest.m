@@ -1,7 +1,9 @@
-for index = 1:64
-  output = hash('SHA512',index);
-  pause(0.1); 
-  clc()
-  printf("SHA256(%d) = ", index)
+f = fileread('Jengascoin_PoW_history.7z');
+  output = hash('SHA256',f);
   display(output)
-endfor
+
+  if(output == 'e67c54770df15f2d8bef0b4fd85f52fb91c1832316b00988a79c400f4dc8d5ae')
+  printf('hashes match');
+endif
+
+
