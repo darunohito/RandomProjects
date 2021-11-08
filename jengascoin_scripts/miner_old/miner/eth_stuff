@@ -6,12 +6,29 @@ use BLAKE3;
 ini_set("memory_limit", "8G");
 $NUM_BITS = 512;
 
+$type = trim($argv[1]);
+$size = intval(trim($argv[2]));
+$node = trim($argv[3]);
+$public_key = trim($argv[4]);
+if(isset($argv[5]))
+{
+	$private_key = trim($argv[5]);
+	
+} else {
+	$private_key = '';
+}
+var_dump($argv);
+new Miner($type, $size, $node, $public_key, $private_key);
 // See https://github.com/ethereum/wiki/wiki/Dagger-Hashimoto#dagger-graph-building
 
 // $SAFE_PRIME_512 = 2**512 - 38117;     # Largest Safe Prime less than 2**512
 class Miner
 {
-	public const P = 2**512 - 38117;              # Safe Prime for hashing and random number generation
+	public const VERSION = '0.1';
+    public const MODE_POOL = 'pool';
+    public const MODE_SOLO = 'solo';
+    public const NODE_STATUS_OK = 'ok';
+	//public const P = 2**512 - 38117;              # Safe Prime for hashing and random number generation
 	public const Gb = 999948288 * 8; // NUM_BITS per gigabit, multiple of 65536
 	public const n = 4000055296 * 8; // NUM_BITS,  # Size of the dataset (4 Gigabytes); MUST BE MULTIPLE OF 65536
     public const n_inc = 65536;                   # Increment in value of n per period; MUST BE MULTIPLE OF 65536 
@@ -54,17 +71,15 @@ class Miner
      */
     public function __construct($type, $size, $node, $public_key, $private_key)
     {	
-		var_dump($argv);
-		echo "in constructor\n";
 		$this->outputHeader();
 		$this->checkDependencies();
 		
 		if (empty($type) || empty($size) || empty($public_key) || empty($node) || ($type == self::MODE_SOLO && empty($private_key))) {
             echo "Usage:
 
-For Solo mining: ./miner solo <size_in_GB> <node> <public_key> <private_key>
+For Solo mining: ./eth_stuff solo <size_in_GB> <node> <public_key> <private_key>
 
-For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
+For Pool mining: ./eth_stuff pool <size_in_GB> <pool-address> <your-address>\n\n";
             exit;
         }
 		if ((log($size,2) % 1) != 0) {
@@ -78,7 +93,7 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
 		
 		$worker = uniqid();
 		
-		prepare($public_key, $private_key, $node, $type, $worker, $size);
+		$this->prepare($public_key, $private_key, $node, $type, $worker, $size);
 		
 		$pt_r = file_get_contents("http://pool.jengas.io/pt.php");
 		if($pt_r > 0)
@@ -92,12 +107,14 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
 			die("ERROR: Could not get mining info from the node\n");
 		}
 		
-		$base = $this->publicKey."-".$nonce."-".$this->block."-".$this->diff;
-		$dagger = produce_dag($base,bcmul($this->size,strval(Gb)));
+		$base = $this->publicKey."-".$this->block."-".$this->diff;
+		$daglength = $this->size*(SELF::Gb);
+		echo "bit length: " . $daglength . "\n";
+		$dagger = $this->produce_dag($base,$daglength);
 		
-		$nonce = mine($dagger);
+		$nonce = $this->mine($dagger);
 		echo "nonce found: $nonce\n";
-		$good_nonce = verify($dagger, $this->block, $nonce);
+		$good_nonce = $this->verify($dagger, $this->block, $nonce);
 		if($good_nonce < 0) {
 			echo "nonce good!\n";
 		} else {
@@ -114,6 +131,7 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
      */
     public function prepare(string $publicKey, string $privateKey, string $node, string $type, string $worker, int $size)
     {
+		
         $this->publicKey = $publicKey;
         $this->privateKey = $privateKey;
         $this->node = $node;
@@ -125,13 +143,15 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
         $this->found = 0;
 		
 		// ethash stuff
+		$this->P = bcsub(bcpow('2','512'),38117);
 		$this->size = $size;
 		$this->diff = 2**14;
 		$this->epochtime = 100000;
 		$this->accesses = 200; 
 		$this->cache_size = 2500;
 		$this->k = 1; 
-		$this->w = w; 
+		$this->w = '400'; //NOT SURE WHAT VALUE THIS IS ACTUALLY SUPPOSED TO BE >.<
+		//$this->w = 4;
     }
 	
 	/**
@@ -163,19 +183,32 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
         }
     }
 	
-	public function produce_dag(string $seed, integer $length) 
+	public function produce_dag($seed, $length) 
 	{
 		$b3 = new BLAKE3();
-		$picker = $init = bcpowmod($b3->hash($seed,'64'), $this->w, strval(P));
-		$o = $init;
-			
+		echo "Creating DAG\n";
+		$blakehash = bc_hexdec($b3->hash($seed,'64'));
+		echo "Blakehash: $blakehash\n";
+		echo "w value: " . $this->w . "\n";
+		echo "P value: " . $this->P . "\n";
+		$testval = bcpowmod('3','4','5');
+		echo "testval: $testval";
+		$picker = bcpowmod($blakehash, $this->w, $this->P);
+		if(!bccomp($picker,chr(0)))
+		{
+			die("picker invalid: $picker\n");
+		}
+		$init = $picker;
+		$o = $picker;
+		
+		echo "picker: $picker \nlength: $length\n";
 		for($i=1; $i<$length; $i++) {
 			// $x = $picker = ($picker * $init) % P
-			$x = $picker = bcmod(bcmul($picker,$init),strval(P));
+			$x = $picker = bcmod(bcmul($picker,$init),$this->P);
 			for($i2=0; $i2++; $i2<$this->k) {
-				$x ^= $o[(int)(bcmod($x,strval($i)))];
+				$x ^= $o[(int)(bcmod($x,(string)$i))];
 			}
-			$o .= bcpowmod($x, strval($this->w), strval(P));
+			$o .= bcpowmod($x, $this->w, $this->P);
 		}
 		return $o;
 	}
@@ -189,13 +222,13 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
 		while (1) 
 		{
 			//$result = hashimoto($daggerset, get_dagsize(params, block),params, decode_int(block.prevhash), $nonce);
-			$result = hashimoto($daggerset, bcmul($this->size,strval(Gb)),$this->block, $nonce);
-			if (bccomp(bcmul($result,$this->diff),strval(2**256)) <= 0) 
+			$result = hashimoto($daggerset, bcmul($this->size,(string)SELF::Gb),$this->block, $nonce);
+			if (bccomp(bcmul($result,$this->diff),(string)(2**256)) <= 0) 
 			{
 				break;
 			}
 			$nonce = bcadd($nonce,1);
-			if (bccomp($nonce,strval(2**64)) > 0) 
+			if (bccomp($nonce,(string)(2**64)) > 0) 
 			{
 				$nonce = 0;
 			}
@@ -210,20 +243,20 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
 	
 	public function hashimoto($dag, $dagsize, $header, $nonce) 
 	{
-		$m = strval(floor($dagsize / 2));
+		$m = (string)floor($dagsize / 2);
 		$b3 = new BLAKE3();
 		$mix = $b3->hash($nonce.$header,'64');
 		for($i=0; $i<$this->accesses; $i++) {
 			//mix ^= dag[m + (mix % 2**64) % m]
-			$mix = gmp_xor($mix,$dag[bcadd($m,bcmod((bcmod($mix,strval(2**64))),$m))]);
+			$mix = gmp_xor($mix,$dag[bcadd($m,bcmod((bcmod($mix,(string)(2**64))),$m))]);
 		}
 		return $b3->hash($b3->hash(mix,'64'),'64');
 	}
 	
 	public function verify($daggerset, $block, $nonce) 
 	{
-		$result = hashimoto($daggerset, bcmul($this->size,strval(Gb)),$this->block, $nonce);
-		return bccomp(bcmul($result,$this->diff), strval(2**256));
+		$result = hashimoto($daggerset, bcmul($this->size,(string)SELF::Gb),$this->block, $nonce);
+		return bccomp(bcmul($result,$this->diff), (string)(2**256));
 	}
 	
 	/**
@@ -288,7 +321,7 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
 			$b[] = $dbg;
 		}
 		
-		replaceCommandOutput($b);
+		//replaceCommandOutput($b);
 		if(isset($dbg)) { unset($dbg); }
 		unset($b);
         return true;
