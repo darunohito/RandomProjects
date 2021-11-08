@@ -8,21 +8,13 @@ $NUM_BITS = 512
 
 // See https://github.com/ethereum/wiki/wiki/Dagger-Hashimoto#dagger-graph-building
 
-/* USE hash($data,'length') for blake3 instead
-function sha3(x) {
-    if isinstance(x, (int, long)) {
-        x = encode_int(x)
-    return decode_int(utils.sha3(x))
-*/
-function dbl_sha3($x) {
-    return hash(hash($x,'64'),'64');
-}
-
 $SAFE_PRIME_512 = 2**512 - 38117     # Largest Safe Prime less than 2**512
 class Miner
 {
-	public const n = 4000055296 * 8 // NUM_BITS,  # Size of the dataset (4 Gigabytes); MUST BE MULTIPLE OF 65536
-    public const n_inc = 65536;                   # Increment in value of n per period; MUST BE MULTIPLE OF 65536 with epochtime=20000 gives 882 MB growth per year
+	public const Gb = 999948288 * 8; // NUM_BITS per gigabit, multiple of 65536
+	public const n = 4000055296 * 8; // NUM_BITS,  # Size of the dataset (4 Gigabytes); MUST BE MULTIPLE OF 65536
+    public const n_inc = 65536;                   # Increment in value of n per period; MUST BE MULTIPLE OF 65536 
+	#with epochtime=20000 gives 882 MB growth per year
     private $cache_size;               # Size of the light client's cache (can be chosen by light client; not part of the algo spec)
     private $diff;                    # Difficulty (adjusted during block evaluation)
     private $epochtime;              # Length of an epoch in blocks (how often the dataset is updated)
@@ -31,6 +23,26 @@ class Miner
     private $accesses;                 # Number of dataset accesses during hashimoto
     public const P = strval($SAFE_PRIME_512);              # Safe Prime for hashing and random number generation
 	private $prime; # Experimental prime value, not yet implemented
+	
+	//from old miner
+	private $publicKey;
+    private $privateKey;
+    private $speed;
+    private $avgSpeed;
+    private $node;
+    private $block;
+    //private $difficulty; replace with $diff
+    private $counter;
+    private $allTime;
+    private $beginTime;
+    private $type;
+    private $worker;
+    private $lastUpdate;
+    private $submit;
+    private $confirm;
+    private $found;
+    private $height;
+    private $testnet;
 	  
 	/**
      * miner constructor.
@@ -64,7 +76,25 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
 		
 		$worker = uniqid();
 		
-		prepare($public_key, $private_key, $node, $type, $worker, $size)
+		prepare($public_key, $private_key, $node, $type, $worker, $size);
+		
+		$pt_r = file_get_contents("http://pool.jengas.io/pt.php");
+		if($pt_r > 0)
+		{
+			//echo "PT_R $pt_r\n";
+			$pt = $pt_r;
+		}
+		
+		$res = $this->update();
+		if (!$res) {
+			die("ERROR: Could not get mining info from the node\n");
+		}
+		
+		$base = $this->publicKey."-".$nonce."-".$this->block."-".$this->diff;
+		$dagger = produce_dag($base,bcmul($this->size,strval(Gb)));
+		
+		$nonce = mine($dagger);
+		echo "nonce found: $nonce\n";
 	}
 	
 	/**
@@ -86,6 +116,7 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
         $this->confirm = 0;
         $this->found = 0;
 		
+		// ethash stuff
 		$this->size = $size;
 		$this->diff = 2**14;
 		$this->epochtime = 100000;
@@ -134,36 +165,150 @@ For Pool mining: ./miner pool <size_in_GB> <pool-address> <your-address>\n\n";
 			// $x = $picker = ($picker * $init) % P
 			$x = $picker = bcmod(bcmul($picker,$init),P)
 			for($i2=0; $i2++; $i2<$this->k) {
-				$x ^= o[(int)(bcmod($x,strval($i)))];
+				$x ^= $o[(int)(bcmod($x,strval($i)))];
 			}
 			$o .= bcpowmod($x, strval($this->w), P));
 		}
-		return o;
+		return $o;
 	}
+	
+	
+	public function mine($daggerset) 
+	{
+		// nonce = randint(0, 2**64)
+		$nonces_tried = 0;
+		$nonce = base64_encode(openssl_random_pseudo_bytes(16));
+		while (1) 
+		{
+			//$result = hashimoto($daggerset, get_dagsize(params, block),params, decode_int(block.prevhash), $nonce);
+			$result = hashimoto($daggerset, bcmul($this->size,strval(Gb)),$this->block, $nonce);
+			if (bccomp(bcmul($result,$this->diff),strval(2**256)) <= 0) {
+				break;
+			}
+			$nonce = bcadd($nonce,1);
+			if (bccomp($nonce,strval(2**64)) > 0) {
+				$nonce = 0;
+			}
+			$nonces_tried++;
+			if(mod($nonces_tried,10) == 0)
+				echo "10 more nonces tried\n"
+			endif
+		}
+		return $nonce;
+	}
+	
+	public function hashimoto($dag, $dagsize, $header, $nonce) 
+	{
+		$m = strval(floor($dagsize / 2));
+		$b3 = new BLAKE3();
+		$mix = $b3->hash($nonce.$header,'64');
+		for($i=0; $i<$this->accesses; $i++) {
+			//mix ^= dag[m + (mix % 2**64) % m]
+			$mix = gmp_xor($mix,$dag[bcadd($m,bcmod((bcmod($mix,strval(2**64))),$m))]
+		}
+		return $b3->hash($b3->hash(mix,'64'),'64');
+	}
+	
+	public function verify($daggerset, $block, $nonce) {
+    $result = hashimoto($daggerset, bcmul($this->size,strval(Gb)),
+                       decode_int(block.prevhash), $nonce)
+    return bccomp(bcmul($result,$this->diff), strval(2**256))
+	
+	/**
+     * @return bool
+     */
+    public function update(): bool
+    {
+		global $noshare_time;
+		global $pooltarget;
+		global $pt;
+		global $outp;
+		global $dbg;
+        $this->lastUpdate = time();
+
+        $extra = "";
+        if ($this->type == self::MODE_POOL) {
+            $extra = "&worker=".$this->worker."&address=".$this->privateKey."&hashrate=".$this->speed;
+			$res = file_get_contents($this->node."/mine.php?q=info".$extra);	
+		} else {
+			$res = file_get_contents($this->node."/api.php?q=getMiningInfo".$extra);		
+        }
+		$info = json_decode($res, true);
+        if ($info['status'] != self::NODE_STATUS_OK) {
+            return false;
+        }
+
+        $data = $info['data'];
+        $this->block = $data['block'];
+        $this->difficulty = $data['difficulty'];
+		
+        if ($this->type === self::MODE_POOL) {
+            $this->publicKey = $data['public_key'];
+        }
+
+        $this->height = $data['height'];
+        $max_target = bchexdec('0x00000000FFFF0000000000000000000000000000000000000000000000000000');
+		$target = bcsub($max_target, $this->difficulty);
+		if(!isset($pooltarget))
+		{
+			$pooltarget = bcmul($target, "$pt");
+		}
+		if ($target < 1) {	
+			$target = 1;
+		}
+
+		if ($this->type == self::MODE_POOL) {
+			if(isset($this->best))
+			{
+				$b[] = "\n--> Best Hash  : ".number_format($this->best, 0, '.', '');
+			} else {
+				$b[] = "\n--> Best Hash  : 0";
+			}
+			$b[] = "\n--> Target     : $target";
+			$b[] = "\n--> Pool Target: $pooltarget";
+			$b[] = "\n--> Difficulty : ".$this->difficulty;
+			$b[] = $outp;
+			$b[] = $dbg;
+		} else {
+			$b[] = "\n--> Target     : $target";
+			$b[] = "\n--> Difficulty : ".$this->difficulty;
+			$b[] = $outp;
+			$b[] = $dbg;
+		}
+		
+		replaceCommandOutput($b);
+		if(isset($dbg)) { unset($dbg); }
+		unset($b);
+        return true;
+    }
 }
 
-function quick_calc(string $seed, integer $p) {
-    $w = $this->w;
-	$cache = {};
-    function quick_calc_cached(integer $p) {
-        if p in cache {
-            break;
+
+/*
+public function quick_calc(string $seed, integer $p) 
+{
+$w = $this->w;
+$cache = {};
+	public function quick_calc_cached(integer $p) 
+	{
+		if (!empty($cache[$p])) {
+			break;
 		}
-        elseif ($p == 0) {
+		elseif ($p == 0) {
 			$b3 = new BLAKE3();
-            $cache[$p] = bcpowmod($b3->hash($seed), strval($this->w), P);
+			$cache[$p] = bcpowmod($b3->hash($seed), strval($this->w), P);
 		}
-        else {
+		else {
 			$b3 = new BLAKE3();
-            $x = bcpowmod($b3->hash($seed), strval(($p + 1) * $this->w), P);
-            for($i2=0; $i2++; $i2<$this->k) {
-                $x = gmp_xor($x,quick_calc_cached(bcmod($x,strval($p))));
+			$x = bcpowmod($b3->hash($seed), strval(($p + 1) * $this->w), P);
+			for($i2=0; $i2++; $i2<$this->k) {
+				$x = gmp_xor($x,quick_calc_cached(bcmod($x,strval($p))));
 			}
-            cache[$p] = bcpowmod($x, $this->w, P)
+			cache[$p] = bcpowmod($x, $this->w, P)
 		}
-        return cache[$p];
+		return cache[$p];
 	}
-    return quick_calc_cached($p);
+return quick_calc_cached($p);
 }
 
 function get_prevhash(n) {
@@ -199,13 +344,6 @@ function get_daggerset(params, block) {
                 "back": {"dag": produce_dag(params, seedset["back_hash"], dagsz),
                          "block_number": seedset["back_number"]}}
 
-function hashimoto(dag, dagsize, params, header, nonce) {
-    m = dagsize / 2
-    mix = sha3(encode_int(nonce) + header)
-    for() _ in range(params["accesses"]) {
-        mix ^= dag[m + (mix % 2**64) % m]
-    return dbl_sha3(mix)
-
 function quick_hashimoto(seed, dagsize, params, header, nonce) {
     m = dagsize // 2
     mix = sha3(nonce + header)
@@ -213,18 +351,7 @@ function quick_hashimoto(seed, dagsize, params, header, nonce) {
         mix ^= quick_calc(params, seed, m + (mix % 2**64) % m)
     return dbl_sha3(mix)
 
-function mine(daggerset, params, block) {
-    from random import randint
-    nonce = randint(0, 2**64)
-    while 1 {
-        result = hashimoto(daggerset, get_dagsize(params, block),
-                           params, decode_int(block.prevhash), nonce)
-        if result * params["diff"] < 2**256 {
-            break
-        nonce += 1
-        if nonce >= 2**64 {
-            nonce = 0 
-    return nonce
+
 
 function verify(daggerset, params, block, nonce) {
     result = hashimoto(daggerset, get_dagsize(params, block),
@@ -236,7 +363,7 @@ function light_verify(params, header, nonce) {
     result = quick_hashimoto(seedset["front_hash"], get_dagsize(params, block),
                              params, decode_int(block.prevhash), nonce)
     return result * params["diff"] < 2**256
-
+*/
     /**
      * @param array $source
      * @param mixed $source_base
@@ -375,7 +502,7 @@ function bchexdec($hex)
 	$dec = 0;
     $len = strlen($hex);
     for ($i = 1; $i <= $len; $i++)
-        $dec = bcadd($dec, bcmul(strval(hexdec($hex[$i - 1])), bcpow('16', strval($len - $i))));
+        $dec = bcadd(strval($dec), bcmul(strval(hexdec($hex[$i - 1])), bcpow('16', strval($len - $i))));
    
     return $dec;
 }
