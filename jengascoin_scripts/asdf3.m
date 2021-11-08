@@ -1,14 +1,23 @@
-max_target_log = log2(hex2dec("00000000FFFF0000000000000000000000000000000000000000000000000000"))
-max_target = hex2dec("00000000FFFF0000000000000000000000000000000000000000000000000000")
-max_target2 = hex2dec("FFFF0000000000000000000000000000000000000000000000000000")
+total = 0;
+blks = 0;
+blks_norm = 0;
+total_norm = 0;
 
-diff_log = log2(10022262709384866483693408155838342387914175228323315009883772174)
-diff = 6007574095768147553250721672589138037977792
-target = 2^(max_target_log - diff_log)
+times = linspace(60,5,120)
+for i = 1:120
+  blks = blks + 1/i; % (i + 1)
+  total = total + times(i)/i; % (i + 1)
+  blks_norm = blks_norm + 1;
+  total_norm = total_norm + times(i);
+endfor
 
-arbtarg = 1000000000`
-arbtarg_log = log2(arbtarg)
-arbdiff = 2348234
-arbdiff_log = log2(arbdiff)
-target = arbtarg - arbdiff
-target_logged = 2^(arbtarg_log-arbdiff_log)
+blks
+total
+blks_norm
+total_norm
+
+avg = total/blks
+avg_norm = total_norm/blks_norm
+
+
+

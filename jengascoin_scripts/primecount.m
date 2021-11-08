@@ -1,6 +1,6 @@
 totalT = tic;
 tic
-range = 5e7;
+range = 250;
 x = linspace(1,range,range);
 x_primes = isprime(x);
 printf("******************\nPrimes found. ");

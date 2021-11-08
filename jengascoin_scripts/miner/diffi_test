@@ -1,0 +1,98 @@
+<?php
+$difficulty = '';
+$height = 200;
+$difficulty = '2595352910113094931564763447226010898738574164086137773096960';
+//$difficulty = '26959535291011309493156476344723991336010898738574164086137773096959';
+//$difficulty = '1';
+
+if ($height>0) {
+	$blks=0;
+	$total_time=0;
+	if ($height>119)
+	{
+		
+		//$result=ceil($total_time/$blks);
+		$result=ceil(3600/120);
+	}
+
+
+	echo "Block time: $result\n";
+	$dif = $difficulty;
+
+	if($height % 1 == 0)
+	{
+		$max_target = bchexdec('0x00000000FFFF0000000000000000000000000000000000000000000000000000');
+		
+		$p_term_coeff_unscaled = 0.2; // keep between 0 and 1, NON-INCLUSIVE. Higher numbers are more sensitive to change.
+		echo "p term coeff unscaled $p_term_coeff_unscaled\n";
+		$p_term_coeff = $p_term_coeff_unscaled / 30; // scale to keep stable 
+		echo "p term coeff 			$p_term_coeff\n";
+		$p_term = $p_term_coeff * (30 - $result); // Proportional term
+		echo "p term 				$p_term\n";
+		$p_term_str = sprintf("%.4f", $p_term);
+		echo "p term str      		$p_term_str\n";
+		$current_target = bcsub($max_target,$difficulty);
+		echo "Maxtarget 			$max_target\n";
+		echo "current target  		$current_target\n";
+		$change = bcfloor(bcmul($current_target, $p_term_str, 4));
+		$dif = bcadd($difficulty,$change);
+		echo "Old difficulty: 		$difficulty\n";
+		echo "change 				$change\n";
+		echo "New Diff: 			$dif\n";
+		
+	}
+}
+
+//minimum & maximum check
+if (bccomp($dif,'1') < 0) {
+	$dif = '1';
+} elseif (bccomp($dif,bcsub($max_target,'1')) > 0) {
+	$dif = bcsub($max_target,1);
+}
+
+$ratio_check = bcdiv(bcsub($max_target,$dif),bcsub($max_target,$difficulty),5);
+echo "Ratio of new target to old target: $ratio_check\n";
+
+echo "Difficulty: $dif\n";
+return $dif;
+
+
+function bchexdec($hex)
+{
+	$dec = 0;
+    $len = strlen($hex);
+    for ($i = 1; $i <= $len; $i++)
+        $dec = bcadd($dec, bcmul(strval(hexdec($hex[$i - 1])), bcpow('16', strval($len - $i))));
+   
+    return $dec;
+}
+
+function bcceil($number)
+{
+    if ($number[0] != '-')
+    {
+        return bcadd($number, 1, 0);
+    }
+
+    return bcsub($number, 0, 0);
+}
+
+function bcfloor($number)
+{
+    if (strpos($number, '.') !== false) {
+        if (preg_match("~\.[0]+$~", $number)) return bcround($number, 0);
+        if ($number[0] != '-') return bcadd($number, 0, 0);
+        return bcsub($number, 1, 0);
+    }
+    return $number;
+}
+
+function bcround($number, $precision = 0)
+{
+    if (strpos($number, '.') !== false) {
+        if ($number[0] != '-') return bcadd($number, '0.' . str_repeat('0', $precision) . '5', $precision);
+        return bcsub($number, '0.' . str_repeat('0', $precision) . '5', $precision);
+    }
+    return $number;
+}
+?>

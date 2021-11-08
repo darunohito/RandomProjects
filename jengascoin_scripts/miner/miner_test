@@ -57,7 +57,7 @@ class Miner
     public function __construct($type, $node, $public_key, $private_key)
     {
 		global $pt;
-        //$this->outputHeader();
+        $this->outputHeader();
 
         $this->checkDependencies();
 
@@ -123,6 +123,8 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 		global $dbg;
         $this->lastUpdate = time();
 
+        //echo "--> Updating mining info\n";
+
         $extra = "";
         if ($this->type == self::MODE_POOL) {
             $extra = "&worker=".$this->worker."&address=".$this->privateKey."&hashrate=".$this->speed;
@@ -149,6 +151,7 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 		if(!isset($pooltarget))
 		{
 			$pooltarget = bcmul($target, "$pt");
+			//var_dump($pooltarget);
 		}
 		if ($target < 1) {	
 			$target = 1;
@@ -157,18 +160,21 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 		if ($this->type == self::MODE_POOL) {
 			if(isset($this->best))
 			{
-				$b[] = "--> Best Hash  : ".number_format($this->best, 0, '.', '')."\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
+				$b[] = "--> Best Hash  : ".number_format($this->best, 0, '.', '')."";
 			} else {
-				$b[] = "--> Best Hash  : 0 \x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
+				$b[] = "--> Best Hash  : 0";
 			}
-			$b[] = "--> Target     : $target\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
-			$b[] = "--> Pool Target: $pooltarget\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
-			$b[] = "--> Difficulty : ".$this->difficulty."\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
+			$b[] = "--> Target     : $target";
+			$b[] = "--> Pool Target: $pooltarget";
+			$b[] = "--> Difficulty : ".$this->difficulty."";
 			$b[] = $outp;
 			$b[] = $dbg;
+			//if(isset($dbg)) { $b[] = $dbg; }
+			//var_dump($dbg);
+			//array_push($b,$dbg);
 		} else {
-			$b[] = "--> Target     : $target \x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
-			$b[] = "--> Difficulty : ".$this->difficulty."\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
+			$b[] = "--> Target     : $target";
+			$b[] = "--> Difficulty : ".$this->difficulty."";
 			$b[] = $outp;
 			$b[] = $dbg;
 		}
@@ -189,6 +195,7 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 		global $noshare_time;
 		global $pooltarget;
 		global $dbg;
+        //echo "--> Submitting nonce $nonce / $blakehash\n";
 
 		$pData = array(
 			'blakehash'       => $blakehash,
@@ -217,23 +224,28 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 		
 		$data = json_decode($res, true);
 		$max_target = bchexdec('0x00000000FFFF0000000000000000000000000000000000000000000000000000');
-		$target = bcsub($max_target, $this->difficulty);
         if ($data['status'] == self::NODE_STATUS_OK) {
 			if ($this->type == self::MODE_POOL) {
-				$share_time = time() - $noshare_time;
-				$pooltarget = pooltarget($share_time,$pooltarget);
-				$noshare_time = time();
-				$dbg = "\033[32m--> Nonce confirmed.\033[0m\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
+				if((time() - $noshare_time) < 15)
+				{
+					$pooltarget = bcsub($pooltarget, bcceil(bcmul($pooltarget, 0.25)));
+					$noshare_time = time();
+					$dbg = "\033[31m--> Decreasing pool target by 25%\033[0m - \033[32mNonce confirmed. \033[0m\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
+					//$dbg[] = "\033[32m--> Nonce confirmed. \033[0m";
+				}
 			}
+			//echo "\033[32m--> Nonce confirmed. \033[0m\n";
 			$this->update();
             return true;
         } else {
-			if ($this->type == self::MODE_POOL) {
-				$share_time = time() - $noshare_time;
-				$pooltarget = pooltarget($share_time,$pooltarget);
-				$dbg = "\033[31m--> The nonce did not confirm.\033[0m\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
+			if((time() - $noshare_time) < 15)
+			{
+				$pooltarget = bcsub($pooltarget, bcceil(bcmul($pooltarget, 0.25)));
 				$noshare_time = time();
+					$dbg = "\033[31m--> Decreasing pool target by 25% - The nonce did not confirm.\033[0m\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
 			}
+			//$dbg[] = "\033[31m--> The nonce did not confirm.\033[0m";
+			//var_dump($res);
 			$this->update();
             return false;
         }
@@ -260,12 +272,12 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
         $start = microtime(true);
         while (1) {
             $this->counter++;
-			$hrt = duration((time() - $this->beginTime));
+
             if (time() - $this->lastUpdate > 2) {
                 $outp = "--> Hashrate: ".$this->speed." H/s   ".
                     "Average: ".$this->avgSpeed." H/s  ".
                     "Total: ".$this->counter."  ".
-                    "Time: $hrt  ".
+                    "Mining Time: ".(time() - $this->beginTime)."  ".
                     "Shares: ".$this->confirm." ".
                     "Finds: ".$this->found."\x20\x20\x20\x20\x20\x20";
                 $this->update();
@@ -310,13 +322,22 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 			}
 			
             if ($result > 0 && $result <= $our_target) {
+				//echo "\033[32m<-- BlakeHash $blakehash \n";
+				//echo "<-- Result $result\033[0m\n";
+				//echo "$result $pooltarget";
 				$confirmed = $this->submit($nonce, $blakehash);
+				
+                if ($this->testnet) {
+                    //echo "\nBlakehash: $blakehash\n";
+                    //echo "\nBase: $base\n";
+                }
                 if ($confirmed && $result <= $target) {
                     $this->found++;
                 } elseif ($confirmed) {
                     $this->confirm++;
                 }
                 $this->submit++;
+				$noshare_time = time();
                 if ($this->testnet) {
                     sleep(240);
                 }
@@ -325,10 +346,19 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
             if ($it == 10) {
                 $it = 0;
                 $end = microtime(true);
+
                 $this->speed = 10 / ($end - $start);
                 $this->avgSpeed = $this->counter / ($end - $this->allTime);
                 $start = $end;
             }
+			if ($this->type == self::MODE_POOL) {
+				if((time() - $noshare_time) > 30)
+				{
+					$pooltarget = bcadd($pooltarget, bcceil(bcmul($pooltarget, 0.1)));
+					$noshare_time = time();
+					$dbg = "\033[31m--> Increased pool target by 10%\033[0m\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
+				}
+			}
         }
     }
 
@@ -417,37 +447,6 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
     }
 
 }
-function duration($ptime) {
-	if ($ptime < 1)
-	{
-		return '0 seconds';
-	}
-
-	$a = array( 365 * 24 * 60 * 60  =>  'year',
-				 30 * 24 * 60 * 60  =>  'month',
-					  24 * 60 * 60  =>  'day',
-						   60 * 60  =>  'hour',
-								60  =>  'minute',
-								 1  =>  'second'
-				);
-	$a_plural = array( 'year'   => 'years',
-					   'month'  => 'months',
-					   'day'    => 'days',
-					   'hour'   => 'hours',
-					   'minute' => 'minutes',
-					   'second' => 'seconds'
-				);
-
-	foreach ($a as $secs => $str)
-	{
-		$d = $ptime / $secs;
-		if ($d >= 1)
-		{
-			$r = round($d);
-			return $r . ' ' . ($r > 1 ? $a_plural[$str] : $str);
-		}
-	}
-}
 function replaceCommandOutput(array $output) {
   static $oldLines = 0;
   $numNewLines = count($output) - 1;
@@ -462,14 +461,16 @@ function replaceCommandOutput(array $output) {
 
   $numNewLines = $oldLines;
 }
-function bcround($number, $precision = 0) {
+function bcround($number, $precision = 0)
+{
 	if (strpos($number, '.') !== false) {
 		if ($number[0] != '-') return bcadd($number, '0.' . str_repeat('0', $precision) . '5', $precision);
 		return bcsub($number, '0.' . str_repeat('0', $precision) . '5', $precision);
 	}
 	return $number;
 }
-function bcceil($number) {
+function bcceil($number)
+{
 	if (strpos($number, '.') !== false) {
 		if (preg_match("~\.[0]+$~", $number)) return bcround($number, 0);
 		if ($number[0] != '-') return bcadd($number, 1, 0);
@@ -477,7 +478,8 @@ function bcceil($number) {
 	}
 	return $number;
 }
-function bcfloor($number) {
+function bcfloor($number)
+{
 	if (strpos($number, '.') !== false) {
 		if (preg_match("~\.[0]+$~", $number)) return bcround($number, 0);
 		if ($number[0] != '-') return bcadd($number, 0, 0);
@@ -485,6 +487,7 @@ function bcfloor($number) {
 	}
 	return $number;
 }
+// BCmath version for huge numbers
 function bc_arb_encode($num, $basestr) {
     if( ! function_exists('bcadd') ) {
         Throw new Exception('You need the BCmath extension.');
@@ -505,6 +508,7 @@ function bc_arb_encode($num, $basestr) {
     }
     return $rep;
 }
+
 function bc_arb_decode($num, $basestr) {
     if( ! function_exists('bcadd') ) {
         Throw new Exception('You need the BCmath extension.');
@@ -524,29 +528,19 @@ function bc_arb_decode($num, $basestr) {
     }
     return $dec;
 }
+//hexdec with BCmath
 function bc_hexdec($num) {
     return bc_arb_decode(strtolower($num), '0123456789abcdef');
 }
 function bc_dechex($num) {
     return bc_arb_encode($num, '0123456789abcdef');
 }
-function pooltarget($at,$pool_target) {	//@Daru
-	global $pooltarget;
-	$max_target = bchexdec('0x00000000FFFF0000000000000000000000000000000000000000000000000000');
-	$p_term_coeff_unscaled = 0.5;
-	$p_term_coeff = $p_term_coeff_unscaled / 15;
-	$p_term = $p_term_coeff * (15 - $at);
-	$p_term_str = sprintf("%.4f", $p_term);
-	$current_target = bcsub($max_target,$pool_target);
-	$pt_change = bcfloor(bcmul($current_target, $p_term_str, 4));
-	$pooltarget = bcadd($pool_target,$pt_change);
-	return $pooltarget;
-}
-function bchexdec($hex) {
+function bchexdec($hex)
+{
 	$dec = 0;
-	$len = strlen($hex);
-	for ($i = 1; $i <= $len; $i++)
-		$dec = bcadd($dec, bcmul(strval(hexdec($hex[$i - 1])), bcpow('16', strval($len - $i))));
+    $len = strlen($hex);
+    for ($i = 1; $i <= $len; $i++)
+        $dec = bcadd($dec, bcmul(strval(hexdec($hex[$i - 1])), bcpow('16', strval($len - $i))));
    
-	return $dec;
+    return $dec;
 }

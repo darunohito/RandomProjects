@@ -1,0 +1,108 @@
+// calculates the difficulty
+    public function difficulty($height = 0)
+    {
+        global $db;
+
+        // if no block height is specified, use the current block.
+        if ($height == 0) {
+            $current = $this->current();
+        } else {
+            $current = $this->get($height);
+        }
+        
+        $height = $current['height'];
+
+        if ($height>0) {
+            $blks=0;
+            $total_time=0;
+            if ($height>119)
+            {
+                $blk = $db->run("SELECT `date`, height FROM blocks ORDER by height DESC LIMIT 120");
+                for ($i=0;$i<119;$i++) {
+					$time=$blk[$i]['date']-$blk[$i+1]['date'];
+					/* //original rolling average code
+					$blks++;
+					$total_time+=$time;
+					*/
+					
+					$blks += 1 / (i+1); //decreasing emphasis on historical values
+					$total_time+=$time / (i+1);
+                }
+                $result=ceil($total_time/$blks);
+            }
+            else
+            {
+                return $current['difficulty'];
+            }
+
+            _log("Block time: $result", 3);
+            _log("Current Diff: $current[difficulty]", 3);
+            $dif = $current['difficulty'];
+
+            if($height % 1 == 0)
+            {
+                $max_target = bchexdec('0x00000000FFFF0000000000000000000000000000000000000000000000000000');
+                
+                $p_term_coeff_unscaled = 0.1; // keep between 0 and 1, NON-INCLUSIVE. Higher numbers make the system more sensitive.
+                _log("p term coeff unscaled $p_term_coeff_unscaled", 3);
+                $p_term_coeff = $p_term_coeff_unscaled / 30; // scale to keep stable 
+                _log("p term coeff 			$p_term_coeff", 3);
+                $p_term = $p_term_coeff * (30 - $result); // Proportional term
+                _log("p term 				$p_term", 3);
+				$p_term_str = sprintf("%.4f", $p_term);
+                _log("p term str 			$p_term_str", 3);
+                $current_target = bcsub($max_target,$current['difficulty']);
+				_log("Maxtarget 			$max_target", 3);
+				_log("current target  		$current_target", 3);
+				$diff_change = bcfloor(bcmul($current_target, $p_term_str, 4));
+				_log("diff_change 				$diff_change", 3);
+                $dif = bcadd($current['difficulty'],$diff_change);
+                _log("New Diff: 			$dif", 3);
+            }
+        }
+        
+        //minimum & maximum check
+		if (bccomp($dif,'1') < 0) {
+			$dif = '1';
+		} elseif (bccomp($dif,bcsub($max_target,'1')) > 0) {
+			$dif = bcsub($max_target,1);
+		}
+
+		$ratio_check = bcdiv(bcsub($max_target,$current['difficulty']),bcsub($max_target,$dif),5);
+		_log("Ratio of old target to new target: $ratio_check", 3);
+		
+        _log("Difficulty: $dif", 4);
+        return $dif;
+    }
+	
+	function bcfloor($number)
+	{
+		if (strpos($number, '.') !== false) {
+			if (preg_match("~\.[0]+$~", $number)) return bcround($number, 0);
+			if ($number[0] != '-') return bcadd($number, 0, 0);
+			return bcsub($number, 1, 0);
+		}
+		return $number;
+	}
+
+	function bcround($number, $precision = 0)
+	{
+		if (strpos($number, '.') !== false) {
+			if ($number[0] != '-') return bcadd($number, '0.' . str_repeat('0', $precision) . '5', $precision);
+			return bcsub($number, '0.' . str_repeat('0', $precision) . '5', $precision);
+		}
+		return $number;
+	}
+	
+	// PHP code to check whether a number is prime or Not
+	// function to check the number is Prime or Not
+	function primeCheck($number){
+		if ($number <= 1)
+		return 0;
+		 
+		for ($i = 2; $i <= sqrt($number); $i++){
+			if ($number % $i == 0)
+				return 0;
+		}
+		return 1;
+	}
