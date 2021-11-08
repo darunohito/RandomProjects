@@ -4,7 +4,7 @@ require('blake3_optimized.php');
 use BLAKE3;
 
 ini_set("memory_limit", "8G");
-$NUM_BITS = 512;
+
 
 $type = trim($argv[1]);
 $size = intval(trim($argv[2]));
@@ -17,7 +17,8 @@ if(isset($argv[5]))
 } else {
 	$private_key = '';
 }
-var_dump($argv);
+
+//var_dump($argv);
 new Miner($type, $size, $node, $public_key, $private_key);
 // See https://github.com/ethereum/wiki/wiki/Dagger-Hashimoto#dagger-graph-building
 
@@ -29,7 +30,8 @@ class Miner
     public const MODE_SOLO = 'solo';
     public const NODE_STATUS_OK = 'ok';
 	//public const P = 2**512 - 38117;              # Safe Prime for hashing and random number generation
-	public const Gb = 999948288 * 8; // NUM_BITS per gigabit, multiple of 65536
+	public const Mb = 983040 * 8; // NUM_BITS, megabyte, multiple of 65536
+	public const Gb = 999948288 * 8; // NUM_BITS, gigabyte, multiple of 65536
 	public const n = 4000055296 * 8; // NUM_BITS,  # Size of the dataset (4 Gigabytes); MUST BE MULTIPLE OF 65536
     public const n_inc = 65536;                   # Increment in value of n per period; MUST BE MULTIPLE OF 65536 
 	#with epochtime=20000 gives 882 MB growth per year
@@ -77,9 +79,9 @@ class Miner
 		if (empty($type) || empty($size) || empty($public_key) || empty($node) || ($type == self::MODE_SOLO && empty($private_key))) {
             echo "Usage:
 
-For Solo mining: ./eth_stuff solo <size_in_GB> <node> <public_key> <private_key>
+For Solo mining: ./eth_stuff solo <size_in_MB> <node> <public_key> <private_key>
 
-For Pool mining: ./eth_stuff pool <size_in_GB> <pool-address> <your-address>\n\n";
+For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n";
             exit;
         }
 		if ((log($size,2) % 1) != 0) {
@@ -108,15 +110,27 @@ For Pool mining: ./eth_stuff pool <size_in_GB> <pool-address> <your-address>\n\n
 		}
 		
 		$base = $this->publicKey."-".$this->block."-".$this->diff;
-		$daglength = $this->size*(SELF::Gb);
+		$daglength = $this->size*(SELF::Mb);
 		echo "bit length: " . $daglength . "\n";
-		$dagger = $this->produce_dag($base,$daglength);
 		
+		//build the DAG
+		//$dagger = $this->produce_dag($base,$daglength);
+		$dagger = $this->produce_dag($base,$daglength/1024);
+		
+		//log the DAG
+		$base_str = var_export($base, true);
+		$dag_str = var_export($dagger, true);
+		$var = "<?php\n\n\$dagger_cache = $dag_str;\n\$base_cache = $base_str\n?>";
+		file_put_contents('DAG.txt', $var);
+		
+		
+		//mine the DAG
 		$nonce = $this->mine($dagger);
 		echo "nonce found: $nonce\n";
-		$good_nonce = $this->verify($dagger, $this->block, $nonce);
-		if($good_nonce < 0) {
-			echo "nonce good!\n";
+		
+		//check the nonce
+		if($this->verify($dagger, $this->block, $nonce)) {
+			echo "nonce good! :D\n";
 		} else {
 			echo "nonce bad >:(\n";
 		}
@@ -141,6 +155,8 @@ For Pool mining: ./eth_stuff pool <size_in_GB> <pool-address> <your-address>\n\n
         $this->submit = 0;
         $this->confirm = 0;
         $this->found = 0;
+		$this->max_target = bchexdec('0x00000000FFFF0000000000000000000000000000000000000000000000000000');
+		$this->target = $this->max_target;
 		
 		// ethash stuff
 		$this->P = bcsub(bcpow('2','512'),38117);
@@ -150,7 +166,7 @@ For Pool mining: ./eth_stuff pool <size_in_GB> <pool-address> <your-address>\n\n
 		$this->accesses = 200; 
 		$this->cache_size = 2500;
 		$this->k = 1; 
-		$this->w = '400'; //NOT SURE WHAT VALUE THIS IS ACTUALLY SUPPOSED TO BE >.<
+		$this->w = '4'; //NOT SURE WHAT VALUE THIS IS ACTUALLY SUPPOSED TO BE >.<
 		//$this->w = 4;
     }
 	
@@ -187,29 +203,28 @@ For Pool mining: ./eth_stuff pool <size_in_GB> <pool-address> <your-address>\n\n
 	{
 		$b3 = new BLAKE3();
 		echo "Creating DAG\n";
-		$blakehash = bc_hexdec($b3->hash($seed,'64'));
+		$blakehash = bchexdec($b3->hash($seed,'64'));
 		echo "Blakehash: $blakehash\n";
-		echo "w value: " . $this->w . "\n";
-		echo "P value: " . $this->P . "\n";
-		$testval = bcpowmod('3','4','5');
-		echo "testval: $testval";
 		$picker = bcpowmod($blakehash, $this->w, $this->P);
-		if(!bccomp($picker,chr(0)))
-		{
-			die("picker invalid: $picker\n");
-		}
 		$init = $picker;
 		$o = $picker;
-		
-		echo "picker: $picker \nlength: $length\n";
+		$percentdone = 0;
+		echo "DAG percent generated: ". str_pad(number_format($percentdone*100,1,".",""),5,STR_PAD_LEFT) ."%";
 		for($i=1; $i<$length; $i++) {
 			// $x = $picker = ($picker * $init) % P
 			$x = $picker = bcmod(bcmul($picker,$init),$this->P);
 			for($i2=0; $i2++; $i2<$this->k) {
-				$x ^= $o[(int)(bcmod($x,(string)$i))];
+				$x = gmp_xor($x,$o[(bcmod($x,(string)$i))]);
 			}
-			$o .= bcpowmod($x, $this->w, $this->P);
+			$o .= encode_int(bcpowmod($x, $this->w, $this->P));
+			if(($i / $length) > ($percentdone + 0.0001))
+			{
+				$percentdone = ($i / $length);
+				echo chr(8).chr(8).chr(8).chr(8).chr(8).chr(8). str_pad(number_format($percentdone*100,2,".",""),5,STR_PAD_LEFT) ."%";
+			}
 		}
+		echo "\nDAG completed\n";
+		echo "DAG length: " . strlen($o) . "\n";
 		return $o;
 	}
 	
@@ -218,45 +233,77 @@ For Pool mining: ./eth_stuff pool <size_in_GB> <pool-address> <your-address>\n\n
 	{
 		// nonce = randint(0, 2**64)
 		$nonces_tried = 0;
-		$nonce = base64_encode(openssl_random_pseudo_bytes(16));
+		$nonce_bytes = openssl_random_pseudo_bytes(8);
+		$nonce_int = decode_int($nonce_bytes);
+		$nonce = base64_encode($nonce_bytes);
+		echo "Target:    $this->target\n     ";
+		echo "Max T:$this->max_target\n     ";
+		$best_result = '';
 		while (1) 
 		{
 			//$result = hashimoto($daggerset, get_dagsize(params, block),params, decode_int(block.prevhash), $nonce);
-			$result = hashimoto($daggerset, bcmul($this->size,(string)SELF::Gb),$this->block, $nonce);
-			if (bccomp(bcmul($result,$this->diff),(string)(2**256)) <= 0) 
+			//$result = $this->hashimoto($daggerset, bcmul($this->size,(string)SELF::Mb),$this->block, $nonce);
+			$result = $this->hashimoto($daggerset, (string)strlen($daggerset),$this->block, $nonce);
+			if (bccomp($result,$this->target) <= 0) 
 			{
 				break;
 			}
-			$nonce = bcadd($nonce,1);
-			if (bccomp($nonce,(string)(2**64)) > 0) 
+			$nonces_tried++;
+			if(bccomp($result,$best_result) < 0 || $nonces_tried == 1)
+			{
+				$best_result = $result;
+			}
+			$nonce_int = bcadd($nonce_int,'1');
+			$nonce_bytes = encode_int($nonce_int);
+			$nonce = base64_encode($nonce_bytes);
+			//$nonce++;
+			if (bccomp($nonce,bcpow('2','64')) > 0) 
 			{
 				$nonce = 0;
 			}
-			$nonces_tried++;
-			if(mod($nonces_tried,10) == 0)
+			
+			if(($nonces_tried % 10) == 0)
 			{
-				echo "10 more nonces tried\n";
+				//echo "\ncurrent:   $result \n";
+				echo "  ".chr(8).chr(8).chr(8).chr(8).chr(8).chr(8).chr(8)."\r\rBest hash: $best_result, nonces tried: $nonces_tried";
 			}
 		}
+		echo "\nReturned nonce: $nonce\n";
 		return $nonce;
 	}
 	
 	public function hashimoto($dag, $dagsize, $header, $nonce) 
 	{
-		$m = (string)floor($dagsize / 2);
-		$b3 = new BLAKE3();
-		$mix = $b3->hash($nonce.$header,'64');
+		$m = bcfloor(bcsub(bcdiv($dagsize,'2'),1));
+		$b_hashi = new BLAKE3();
+		$mix = bc_hexdec($b_hashi->hash($nonce.$header,'64'));
 		for($i=0; $i<$this->accesses; $i++) {
 			//mix ^= dag[m + (mix % 2**64) % m]
-			$mix = gmp_xor($mix,$dag[bcadd($m,bcmod((bcmod($mix,(string)(2**64))),$m))]);
+			$dagstr = '';
+			$i2 = bcadd($m,bcmod(bcmod($mix,bcpow('2','64')),$m));
+			$mix256 = encode_int($mix);
+			for($i3=0; $i3<strlen($mix256); $i3++)
+			{
+				$dagstr .= $dag[bcadd($i2,(string)$i3)];
+				if(bccomp(bcadd($i2,(string)($i3+1)),$dagsize) >= 0)
+				{
+					$i2 = '0';
+				}					
+			}
+			//echo "i2: " . $i2 ."\n";
+			$mix = gmp_xor(decode_int($mix256),decode_int($dagstr));
+			//echo "dag[$i2]: \n     " . decode_int($dagstr) . "\n";
+			//echo "mix: \n     " . $mix . "\n\n";
 		}
-		return $b3->hash($b3->hash(mix,'64'),'64');
+		//return bc_hexdec($b_hashi->hash($b_hashi->hash($mix,'64'),'32'));
+		return bc_hexdec($b_hashi->hash($b_hashi->hash($mix,'64'),'32'));
 	}
 	
 	public function verify($daggerset, $block, $nonce) 
 	{
-		$result = hashimoto($daggerset, bcmul($this->size,(string)SELF::Gb),$this->block, $nonce);
-		return bccomp(bcmul($result,$this->diff), (string)(2**256));
+		//$result = $this->hashimoto($daggerset, bcmul($this->size,(string)SELF::Mb),$this->block, $nonce);
+		$result = $this->hashimoto($daggerset, (string)strlen($daggerset),$this->block, $nonce);
+		return (bccomp($result,$this->target) <= 0);
 	}
 	
 	/**
@@ -285,21 +332,22 @@ For Pool mining: ./eth_stuff pool <size_in_GB> <pool-address> <your-address>\n\n
 
         $data = $info['data'];
         $this->block = $data['block'];
-        $this->difficulty = $data['difficulty'];
+        $this->diff = $data['difficulty'];
 		
         if ($this->type === self::MODE_POOL) {
             $this->publicKey = $data['public_key'];
         }
 
         $this->height = $data['height'];
-        $max_target = bchexdec('0x00000000FFFF0000000000000000000000000000000000000000000000000000');
-		$target = bcsub($max_target, $this->difficulty);
+        $this->max_target = bchexdec('0x00000000FFFF0000000000000000000000000000000000000000000000000000');
+		$this->target = bcsub($this->max_target, $this->diff);
+		
 		if(!isset($pooltarget))
 		{
-			$pooltarget = bcmul($target, "$pt");
+			$pooltarget = bcmul($this->target, "$pt");
 		}
-		if ($target < 1) {	
-			$target = 1;
+		if ($this->target < 1) {	
+			$this->target = 1;
 		}
 
 		if ($this->type == self::MODE_POOL) {
@@ -309,14 +357,14 @@ For Pool mining: ./eth_stuff pool <size_in_GB> <pool-address> <your-address>\n\n
 			} else {
 				$b[] = "\n--> Best Hash  : 0";
 			}
-			$b[] = "\n--> Target     : $target";
+			$b[] = "\n--> Target     : $this->target";
 			$b[] = "\n--> Pool Target: $pooltarget";
-			$b[] = "\n--> Difficulty : ".$this->difficulty;
+			$b[] = "\n--> Difficulty : ".$this->diff;
 			$b[] = $outp;
 			$b[] = $dbg;
 		} else {
-			$b[] = "\n--> Target     : $target";
-			$b[] = "\n--> Difficulty : ".$this->difficulty;
+			$b[] = "\n--> Target     : $this->target";
+			$b[] = "\n--> Difficulty : ".$this->diff;
 			$b[] = $outp;
 			$b[] = $dbg;
 		}
@@ -417,14 +465,15 @@ function light_verify(params, header, nonce) {
      * @author Mika Tuupola
      * @link   https://github.com/tuupola/base58
      */
-    public function baseConvert(array $source, $source_base, $target_base)
+    public function baseConvert($source, $source_base, $target_base)
     {
+		$source = str_split($source);
         $result = [];
         while ($count = count($source)) {
             $quotient = [];
             $remainder = 0;
             for ($i = 0; $i !== $count; $i++) {
-                $accumulator = $source[$i] + $remainder * $source_base;
+                $accumulator = intval($source[$i]) + $remainder * $source_base;
                 $digit = (integer)($accumulator / $target_base);
                 $remainder = $accumulator % $target_base;
                 if (count($quotient) || $digit) {
@@ -434,7 +483,9 @@ function light_verify(params, header, nonce) {
             array_unshift($result, $remainder);
             $source = $quotient;
         }
-        return $result;
+		return implode("", array_map(function ($ascii) {
+            return chr($ascii);
+        }, $result));
     }
 
     /**
@@ -457,7 +508,7 @@ function light_verify(params, header, nonce) {
             $converted = $this->baseConvert($data, 58, 10);
             return (integer)implode("", $converted);
         }
-        $converted = $this->baseConvert($data, 58, 256);
+        $converted = baseConvert($data, 58, 256);
         return implode("", array_map(function ($ascii) {
             return chr($ascii);
         }, $converted));
@@ -521,4 +572,49 @@ function bchexdec($hex)
         $dec = bcadd(strval($dec), bcmul(strval(hexdec($hex[$i - 1])), bcpow('16', strval($len - $i))));
    
     return $dec;
+}
+
+function bcfloor($number)
+{
+	if (strpos($number, '.') !== false) {
+		if (preg_match("~\.[0]+$~", $number)) return bcround($number, 0);
+		if ($number[0] != '-') return bcadd($number, 0, 0);
+		return bcsub($number, 1, 0);
+	}
+	return $number;
+}
+
+function bcround($number, $precision = 0)
+{
+	if (strpos($number, '.') !== false) {
+		if ($number[0] != '-') return bcadd($number, '0.' . str_repeat('0', $precision) . '5', $precision);
+		return bcsub($number, '0.' . str_repeat('0', $precision) . '5', $precision);
+	}
+	return $number;
+}
+
+
+function encode_int($x) 
+{
+    // Encode an integer x as a string of 64 characters using a big-endian scheme 
+    $o = '';
+	$NUM_BITS = 512;
+    for ($i=0; $i<($NUM_BITS / 8); $i++)
+	{
+        $o = chr(bcmod($x,'256')).$o;
+        $x = bcdiv($x,'256');
+	}
+    return $o;
+}
+
+function decode_int($s)
+{
+    // Unencode an integer x from a string using a big-endian scheme 
+    $x = '';
+    for ($i=0; $i<strlen($s); $i++)
+	{
+        $x = bcmul($x,'256');
+        $x = bcadd($x, ord($s[$i]));
+	}
+    return $x;
 }
