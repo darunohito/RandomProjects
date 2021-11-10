@@ -31,17 +31,17 @@ class Miner
     public const NODE_STATUS_OK = 'ok';
 	//public const P = 2**512 - 38117;              # Safe Prime for hashing and random number generation
 	public const Mb = 983040 * 8; // NUM_BITS, megabyte, multiple of 65536
-	public const Gb = 999948288 * 8; // NUM_BITS, gigabyte, multiple of 65536
-	public const n = 4000055296 * 8; // NUM_BITS,  # Size of the dataset (4 Gigabytes); MUST BE MULTIPLE OF 65536
-    public const n_inc = 65536;                   # Increment in value of n per period; MUST BE MULTIPLE OF 65536 
+	//public const Gb = 999948288 * 8; // NUM_BITS, gigabyte, multiple of 65536
+	//public const n = 4000055296 * 8; // NUM_BITS,  # Size of the dataset (4 Gigabytes); MUST BE MULTIPLE OF 65536
+    //public const n_inc = 65536;      	# Increment in value of n per period; MUST BE MULTIPLE OF 65536 
 	#with epochtime=20000 gives 882 MB growth per year
-    private $cache_size;               # Size of the light client's cache (can be chosen by light client; not part of the algo spec)
-    private $diff;                    # Difficulty (adjusted during block evaluation)
-    private $epochtime;              # Length of an epoch in blocks (how often the dataset is updated)
-    private $k;                          # Number of parents of a node
+    private $cache_size;               	# Size of the light client's cache (can be chosen by light client; not part of the algo spec)
+    private $diff;                    	# Difficulty (adjusted during block evaluation)
+    private $epochtime;              	# Length of an epoch in blocks (how often the dataset is updated)
+    private $k;                         # Number of parents of a node
     private $w;                         # Used for modular exponentiation hashing
-    private $accesses;                 # Number of dataset accesses during hashimoto
-	private $prime; # Experimental prime value, not yet implemented
+    private $accesses;                 	# Number of dataset accesses during hashimoto
+	private $prime; 					# Experimental prime value, not yet implemented
 	
 	//from old miner
 	private $publicKey;
@@ -61,6 +61,7 @@ class Miner
     private $confirm;
     private $found;
     private $height;
+	private $dagHeight;
     private $testnet;
 	  
 	/**
@@ -104,7 +105,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 			$pt = $pt_r;
 		}
 		
-		$res = $this->update();
+		$res = $this->update_block();
 		if (!$res) {
 			die("ERROR: Could not get mining info from the node\n");
 		}
@@ -126,7 +127,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		
 		//mine the DAG
 		$nonce = $this->mine($dagger);
-		echo "nonce found: $nonce\n";
+		echo "nonce found! :o\n";
 		
 		//check the nonce
 		if($this->verify($dagger, $this->block, $nonce)) {
@@ -155,14 +156,14 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
         $this->submit = 0;
         $this->confirm = 0;
         $this->found = 0;
-		$this->max_target = bchexdec('0x00000000FFFF0000000000000000000000000000000000000000000000000000');
+		$this->max_target = bcsub(bcpow(16,127) ,1); //63.5-byte max target/difficulty
 		$this->target = $this->max_target;
 		
 		// ethash stuff
-		$this->P = bcsub(bcpow('2','512'),38117);
+		$this->P = bcsub(bcpow(2,512),38117);
 		$this->size = $size;
 		$this->diff = 2**14;
-		$this->epochtime = 100000;
+		$this->epochtime = 10080; // 10080 yields DAG updates twice per week @ 30s blocktimes
 		$this->accesses = 200; 
 		$this->cache_size = 2500;
 		$this->k = 1; 
@@ -216,7 +217,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 			for($i2=0; $i2++; $i2<$this->k) {
 				$x = gmp_xor($x,$o[(bcmod($x,(string)$i))]);
 			}
-			$o .= encode_int(bcpowmod($x, $this->w, $this->P));
+			$o .= encode_int(bcpowmod($x, $this->w, $this->P), '64');
 			if(($i / $length) > ($percentdone + 0.0001))
 			{
 				$percentdone = ($i / $length);
@@ -233,11 +234,10 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 	{
 		// nonce = randint(0, 2**64)
 		$nonces_tried = 0;
-		$nonce_bytes = openssl_random_pseudo_bytes(8);
-		$nonce_int = decode_int($nonce_bytes);
-		$nonce = base64_encode($nonce_bytes);
-		echo "Target:    $this->target\n     ";
-		echo "Max T:$this->max_target\n     ";
+		$nonce = openssl_random_pseudo_bytes(8);
+		$nonce_int = decode_int($nonce);
+		echo "Target:    $this->target\n";
+		echo "Max T:     $this->max_target\n";
 		$best_result = '';
 		while (1) 
 		{
@@ -246,6 +246,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 			$result = $this->hashimoto($daggerset, (string)strlen($daggerset),$this->block, $nonce);
 			if (bccomp($result,$this->target) <= 0) 
 			{
+				echo "\nSolution:  $result\n";
 				break;
 			}
 			$nonces_tried++;
@@ -254,13 +255,11 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 				$best_result = $result;
 			}
 			$nonce_int = bcadd($nonce_int,'1');
-			$nonce_bytes = encode_int($nonce_int);
-			$nonce = base64_encode($nonce_bytes);
-			//$nonce++;
-			if (bccomp($nonce,bcpow('2','64')) > 0) 
+			if (bccomp($nonce_int,bcpow('2','64')) > 0) 
 			{
-				$nonce = 0;
+				$nonce_int = 0;
 			}
+			$nonce = encode_int($nonce_int, '64');
 			
 			if(($nonces_tried % 10) == 0)
 			{
@@ -268,20 +267,45 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 				echo "  ".chr(8).chr(8).chr(8).chr(8).chr(8).chr(8).chr(8)."\r\rBest hash: $best_result, nonces tried: $nonces_tried";
 			}
 		}
-		echo "\nReturned nonce: $nonce\n";
+		$nonce_64 = bc_arb_encode($nonce_int,'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz');
+		echo "\nReturned nonce: $nonce_64\n";
+		
 		return $nonce;
 	}
 	
 	public function hashimoto($dag, $dagsize, $header, $nonce) 
 	{
 		$m = bcfloor(bcsub(bcdiv($dagsize,'2'),1));
-		$b_hashi = new BLAKE3();
-		$mix = bc_hexdec($b_hashi->hash($nonce.$header,'64'));
+		$mix = bc_hexdec(blake3($nonce.$header,'64'));
 		for($i=0; $i<$this->accesses; $i++) {
 			//mix ^= dag[m + (mix % 2**64) % m]
 			$dagstr = '';
 			$i2 = bcadd($m,bcmod(bcmod($mix,bcpow('2','64')),$m));
-			$mix256 = encode_int($mix);
+			$mix256 = encode_int($mix,'64');
+			for($i3=0; $i3<strlen($mix256); $i3++) //If there's a way to reference an 64-byte string in a bytewise way, that would be a great 
+			{
+				$dagstr .= $dag[bcadd($i2,(string)$i3)];
+				if(bccomp(bcadd($i2,(string)($i3+1)),$dagsize) >= 0)
+				{
+					$i2 = '0';
+				}					
+			}
+			$mix = gmp_xor(decode_int($mix256),decode_int($dagstr));
+			//echo "dag[$i2]: \n     " . decode_int($dagstr) . "\n";
+			//echo "mix: \n     " . $mix . "\n\n";
+		}
+		return bc_hexdec(dbl_blake3($mix,'64'));
+	}
+	
+	public function quick_hashimoto($seed, $dagsize, $header, $nonce)
+	{
+		$m = bcfloor(bcsub(bcdiv($dagsize,'2'),1));
+		$mix = bc_hexdec(blake3($nonce.$header,'64'));
+		for($i=0; $i<$this->accesses; $i++) {
+			//mix ^= dag[m + (mix % 2**64) % m]
+			$dagstr = '';
+			$i2 = bcadd($m,bcmod(bcmod($mix,bcpow('2','64')),$m));
+			$mix256 = encode_int($mix,'64');
 			for($i3=0; $i3<strlen($mix256); $i3++)
 			{
 				$dagstr .= $dag[bcadd($i2,(string)$i3)];
@@ -290,13 +314,11 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 					$i2 = '0';
 				}					
 			}
-			//echo "i2: " . $i2 ."\n";
-			$mix = gmp_xor(decode_int($mix256),decode_int($dagstr));
+			$mix = gmp_xor(decode_int($mix256),quick_calc($seed, $m + bcmod(bcmod($mix,bcpow('2','64'))),$m));
 			//echo "dag[$i2]: \n     " . decode_int($dagstr) . "\n";
 			//echo "mix: \n     " . $mix . "\n\n";
 		}
-		//return bc_hexdec($b_hashi->hash($b_hashi->hash($mix,'64'),'32'));
-		return bc_hexdec($b_hashi->hash($b_hashi->hash($mix,'64'),'32'));
+		return bc_hexdec(dbl_blake3($mix,'64'));
 	}
 	
 	public function verify($daggerset, $block, $nonce) 
@@ -309,7 +331,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 	/**
      * @return bool
      */
-    public function update(): bool
+    public function update_block(): bool
     {
 		global $noshare_time;
 		global $pooltarget;
@@ -339,7 +361,6 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
         }
 
         $this->height = $data['height'];
-        $this->max_target = bchexdec('0x00000000FFFF0000000000000000000000000000000000000000000000000000');
 		$this->target = bcsub($this->max_target, $this->diff);
 		
 		if(!isset($pooltarget))
@@ -374,88 +395,111 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		unset($b);
         return true;
     }
-
-
-/*
-public function quick_calc(string $seed, integer $p) 
-{
-$w = $this->w;
-$cache = {};
-	public function quick_calc_cached(integer $p) 
+	
+	function update_dag(): bool
 	{
-		if (!empty($cache[$p])) {
-			break;
+		
+		//have correct dag(s) in cache?
+			//if so, pull it into memory 
+		//if not,
+		
+		if((int)$this->height - $this->epochtime > $this->$dagHeight)
+		{
+			//update $dagHeight
+			//generate dag 
+			//want to pregenerate next epoch's dag? if so,
+				//generate next dag 
+			//new epoch time for next epoch? (depends on gamification implementation)
+				//if so, store it in $this->epochtime
+			//save new daggerset into cache file
+			return true;
+		} else {
+			return false;
 		}
-		elseif ($p == 0) {
-			$b3 = new BLAKE3();
-			$cache[$p] = bcpowmod($b3->hash($seed), strval($this->w), P);
-		}
-		else {
-			$b3 = new BLAKE3();
-			$x = bcpowmod($b3->hash($seed), strval(($p + 1) * $this->w), P);
-			for($i2=0; $i2++; $i2<$this->k) {
-				$x = gmp_xor($x,quick_calc_cached(bcmod($x,strval($p))));
-			}
-			cache[$p] = bcpowmod($x, $this->w, P)
-		}
-		return cache[$p];
 	}
-return quick_calc_cached($p);
-}
-
-function get_prevhash(n) {
-    from pyethereum.blocks import GENESIS_PREVHASH 
-    from pyethreum import chain_manager
-    if num <= 0 {
-        return hash_to_int(GENESIS_PREVHASH)
-    else {
-        prevhash = chain_manager.index.get_block_by_number(n - 1)
-        return decode_int(prevhash)
-
-function get_seedset(params, block) {
-    seedset = {}
-    seedset["back_number"] = block.number - (block.number % params["epochtime"])
-    seedset["back_hash"] = get_prevhash(seedset["back_number"])
-    seedset["front_number"] = max(seedset["back_number"] - params["epochtime"], 0)
-    seedset["front_hash"] = get_prevhash(seedset["front_number"])
-    return seedset
-
-function get_dagsize(params, block) {
-    return params["n"] + (block.number // params["epochtime"]) * params["n_inc"]
-
-function get_daggerset(params, block) {
-    dagsz = get_dagsize(params, block)
-    seedset = get_seedset(params, block)
-    if seedset["front_hash"] <= 0 {
-        # No back buffer is possible, just make front buffer
-        return {"front": {"dag": produce_dag(params, seedset["front_hash"], dagsz), 
-                          "block_number": 0}}
-    else {
-        return {"front": {"dag": produce_dag(params, seedset["front_hash"], dagsz),
-                          "block_number": seedset["front_number"]},
-                "back": {"dag": produce_dag(params, seedset["back_hash"], dagsz),
-                         "block_number": seedset["back_number"]}}
-
-function quick_hashimoto(seed, dagsize, params, header, nonce) {
-    m = dagsize // 2
-    mix = sha3(nonce + header)
-    for() _ in range(params["accesses"]) {
-        mix ^= quick_calc(params, seed, m + (mix % 2**64) % m)
-    return dbl_sha3(mix)
+	
+	// NEW FUNCTIONS START ***********************************************************
+	public function quick_calc($seed, $p)
+	{
+		$w = $this->w;
+		$P = $this->P;
+		$cache = [];
+		
+		function quick_calc_cached($p)
+		{
+			if(in_array($p, $cache))
+			{
+			}
+			elseif($p == 0)
+			{
+				$cache[$p] = bcpowmod(blake3($seed,'64'), strval($w), $P);
+			}
+			else
+			{
+				$x = bcpowmod(blake3($seed,'64'), strval($p+1) * $w, $P);
+				//for _ in range(params["k"]):
+				for ($i=0; $i<$this->k; $i++)
+				{
+					$x = pow($x, quick_calc_cached($x % $p));
+				}
+				$cache[$p] = bcpowmod($x, $w, $P);
+				return $cache[$p];
+			}
+		}
+		return quick_calc_cached($p);
+	}
 
 
+	public function get_prevhash($n) //$n is just block height I think
+	{
+		if ($n <= 0)
+		{	// return genesis block hash
+			return(blake3('Let there be light','64'));
+		} else { //return previous block hash (requires update() prior to query)
+			return($this->block);
+		}
+	}
 
-function verify(daggerset, params, block, nonce) {
-    result = hashimoto(daggerset, get_dagsize(params, block),
-                       params, decode_int(block.prevhash), nonce)
-    return result * params["diff"] < 2**256
+	public function get_seedset()
+	{
+		$seedset = [];
+		$seedset["back_number"] = (int)$this->height - ((int)$this->height % $this->epochtime);
+		$seedset["back_hash"] = get_prevhash($seedset["back_number"]);
+		$seedset["front_number"] = max($seedset["back_number"] - $this->epochtime, 0);
+		$seedset["front_hash"] = get_prevhash($seedset["front_number"]);
+		return $seedset;
+	}
 
-function light_verify(params, header, nonce) {
-    seedset = get_seedset(params, block)
-    result = quick_hashimoto(seedset["front_hash"], get_dagsize(params, block),
-                             params, decode_int(block.prevhash), nonce)
-    return result * params["diff"] < 2**256
-*/
+	public function get_dagsize()
+	{ //Not decided yet for Jengas blockchain, but will likely not scale over time in the same way as Ethereum DAG
+		return $this->size *Mb; // + ($block['height'] / $params["epochtime"]) * $params["n_inc"];
+	}
+
+	public function get_daggerset($params, $block)
+	{
+		$dagsz = get_dagsize($params, $block);
+		$seedset = get_seedset($params, $block);
+		if ($seedset["front_hash"] <= 0)
+		{
+			# No back buffer is possible, just make front buffer
+			return "{front: {dag: " . produce_dag($params, $seedset['front_hash'], $dagsz) . ", block_number: 0}}";
+		}
+		else
+		{
+			return "{front: {dag: " . produce_dag($seedset["front_hash"], $dagsz) . ", block_number: " . $seedset["front_number"] . "},
+			back: {dag: " . produce_dag($seedset["back_hash"], $dagsz) . ", block_number: " . $seedset["back_number"] . "}}";
+		}
+	}
+
+	public function light_verify($header, $nonce)
+	{
+		$seedset = get_seedset($block);
+		$result = quick_hashimoto($seedset["front_hash"], get_dagsize($params, $block), $params, decode_int($block['prevhash']), $nonce);
+		return $result * $params["diff"] < pow(2, 256);
+	}
+
+	// NEW FUNCTIONS END ***********************************************************
+
     /**
      * @param array $source
      * @param mixed $source_base
@@ -465,6 +509,7 @@ function light_verify(params, header, nonce) {
      * @author Mika Tuupola
      * @link   https://github.com/tuupola/base58
      */
+	 
     public function baseConvert($source, $source_base, $target_base)
     {
 		$source = str_split($source);
@@ -594,12 +639,11 @@ function bcround($number, $precision = 0)
 }
 
 
-function encode_int($x) 
+function encode_int($x,$bytelen) 
 {
-    // Encode an integer x as a string of 64 characters using a big-endian scheme 
+    // Encode an integer x as a string of bytelen characters using a big-endian scheme 
     $o = '';
-	$NUM_BITS = 512;
-    for ($i=0; $i<($NUM_BITS / 8); $i++)
+    for ($i=0; $i<($bytelen); $i++)
 	{
         $o = chr(bcmod($x,'256')).$o;
         $x = bcdiv($x,'256');
@@ -617,4 +661,38 @@ function decode_int($s)
         $x = bcadd($x, ord($s[$i]));
 	}
     return $x;
+}
+
+function blake3($x, $len_str)
+{
+	$b3 = new BLAKE3();
+	//$b3->hash($seed) ???
+	
+	//if isinstance(x, (int, long)):
+	//x = encode_int(x)
+	//return decode_int(utils.sha3(x))
+	if(is_int($x))
+	{
+		$x = encode_int($x, '64');
+	}
+	//return decode_int($b3->hash($x,$len_str)); //not sure where utils is in original eth_stuff.py. We don't have access to it so ?
+	return $b3->hash($x,$len_str);
+}
+
+function dbl_blake3($x,$len_str)
+{
+	$b3 = new BLAKE3();
+	//$b3->hash($seed); ???
+	
+	//if isinstance(x, (int, long)):
+	//x = encode_int(x)
+	//return decode_int(utils.sha3(utils.sha3(x)))
+	
+	if (is_int($x))
+	{
+		$x = encode_int($x, '64');
+	}
+	//return decode_int(utils.sha3(utils.sha3(x)))
+	//return decode_int($b3->hash($b3->hash($x,$len_str),$len_str)); //same issue as above
+	return $b3->hash($b3->hash($x,$len_str),$len_str);
 }
