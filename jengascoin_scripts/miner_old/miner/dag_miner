@@ -208,7 +208,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		echo "Blakehash: $blakehash\n";
 		$picker = bcpowmod($blakehash, $this->w, $this->P);
 		$init = $picker;
-		$o = $picker;
+		$o = encode_int($picker, '64');
 		$percentdone = 0;
 		echo "DAG percent generated: ". str_pad(number_format($percentdone*100,1,".",""),5,STR_PAD_LEFT) ."%";
 		for($i=1; $i<$length; $i++) {
