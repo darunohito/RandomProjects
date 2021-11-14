@@ -118,10 +118,10 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		//$dagger = $this->produce_dag($base,$daglength);
 		$dagger = $this->produce_dag($base,$daglength/1024);
 		
-		//log the DAG
+		//log the DAG and DAG seed (base)
 		$base_str = var_export($base, true);
 		$dag_str = var_export($dagger, true);
-		$var = "<?php\n\n\$dagger_cache = $dag_str;\n\$base_cache = $base_str\n?>";
+		$var = "<?php\n\n\$base_cache = $base_str;\n\$dagger_cache = $dag_str;\n?>";
 		file_put_contents('DAG.php', $var);
 		
 		
@@ -135,6 +135,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		} else {
 			echo "nonce bad >:(\n";
 		}
+		exit(0);
 	}
 	
 	/**
