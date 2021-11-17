@@ -30,6 +30,7 @@ class Miner
     public const MODE_SOLO = 'solo';
     public const NODE_STATUS_OK = 'ok';
 	//public const P = 2**512 - 38117;              # Safe Prime for hashing and random number generation
+	public const TwoExp64 = '18446744073709551616'; //to improve efficiency
 	public const Mb = 983040 * 8; // NUM_BITS, megabyte, multiple of 65536
 	//public const Gb = 999948288 * 8; // NUM_BITS, gigabyte, multiple of 65536
 	//public const n = 4000055296 * 8; // NUM_BITS,  # Size of the dataset (4 Gigabytes); MUST BE MULTIPLE OF 65536
@@ -118,13 +119,6 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		//$dagger = $this->produce_dag($base,$daglength);
 		$dagger = $this->produce_dag($base,$daglength/1024);
 		
-		//log the DAG and DAG seed (base)
-		$base_str = var_export($base, true);
-		$dag_str = var_export($dagger, true);
-		$var = "<?php\n\n\$base_cache = $base_str;\n\$dagger_cache = $dag_str;\n?>";
-		file_put_contents('DAG.php', $var);
-		
-		
 		//mine the DAG
 		$nonce = $this->mine($dagger);
 		echo "nonce found! :o\n";
@@ -164,7 +158,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		$this->P = bcsub(bcpow(2,512),38117);
 		$this->size = $size;
 		$this->diff = 2**14;
-		$this->epochtime = 10080; // 10080 yields DAG updates twice per week @ 30s blocktimes
+		$this->epochtime = 10080; // 10080 yields DAG updates twice per week @ 30s blocktimes, this won't be constant in the full implementation!
 		$this->accesses = 200; 
 		$this->cache_size = 2500;
 		$this->k = 1; 
@@ -227,6 +221,22 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		}
 		echo "\nDAG completed\n";
 		echo "DAG length: " . strlen($o) . "\n";
+		
+		
+		//log the DAG, DAG length, DAG epoch, and DAG seed (base)
+		//$epoch_str = var_export((int)(floor($this->height/$this->epochtime)), true);
+		//$daglen_str = var_export($daglength, true);
+		//$base_str = var_export($base, true);
+		
+		$epoch_str = (string)((int)(floor($this->height/$this->epochtime)));
+		$dag_str = var_export($o, true);
+		$base_str_short = $b3->hash($seed,'16'); //shorthash record of base
+		/*$var = "<?php\n\n\$epoch_cache = $epoch_str;\n\$daglength_cache = $daglen_str;\n\$base_cache = $base_str;\n\$dagger_cache = $dag_str;\n?>"; */
+		//file_put_contents('DAG_E'.$epoch_str.'_L'.$daglen_str.'_.php', $var);
+		$var = "<?php\n\n\$dagger_cache = $dag_str;\n?>";
+		
+		file_force_contents('dag_cache/DAG_E_'.$epoch_str.'_L_'.$length.'_B_'.$base_str_short.'.php', $var);
+		unset($var); //free memory
 		return $o;
 	}
 	
@@ -256,7 +266,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 				$best_result = $result;
 			}
 			$nonce_int = bcadd($nonce_int,'1');
-			if (bccomp($nonce_int,bcpow('2','64')) > 0) 
+			if (bccomp($nonce_int,SELF::TwoExp64) > 0) 
 			{
 				$nonce_int = 0;
 			}
@@ -281,7 +291,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		for($i=0; $i<$this->accesses; $i++) {
 			//mix ^= dag[m + (mix % 2**64) % m]
 			$dagstr = '';
-			$i2 = bcadd($m,bcmod(bcmod($mix,bcpow('2','64')),$m));
+			$i2 = bcadd($m,bcmod(bcmod($mix,SELF::TwoExp64),$m));
 			$mix256 = encode_int($mix,'64');
 			for($i3=0; $i3<strlen($mix256); $i3++) //If there's a way to reference an 64-byte string in a bytewise way, that would be a great 
 			{
@@ -305,7 +315,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		for($i=0; $i<$this->accesses; $i++) {
 			//mix ^= dag[m + (mix % 2**64) % m]
 			$dagstr = '';
-			$i2 = bcadd($m,bcmod(bcmod($mix,bcpow('2','64')),$m));
+			$i2 = bcadd($m,bcmod(bcmod($mix,SELF::TwoExp64),$m));
 			$mix256 = encode_int($mix,'64');
 			for($i3=0; $i3<strlen($mix256); $i3++)
 			{
@@ -315,7 +325,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 					$i2 = '0';
 				}					
 			}
-			$mix = gmp_xor(decode_int($mix256),quick_calc($seed, $m + bcmod(bcmod($mix,bcpow('2','64'))),$m));
+			$mix = gmp_xor(decode_int($mix256),quick_calc($seed, $m + bcmod(bcmod($mix,SELF::TwoExp64)),$m));
 			//echo "dag[$i2]: \n     " . decode_int($dagstr) . "\n";
 			//echo "mix: \n     " . $mix . "\n\n";
 		}
@@ -696,4 +706,15 @@ function dbl_blake3($x,$len_str)
 	//return decode_int(utils.sha3(utils.sha3(x)))
 	//return decode_int($b3->hash($b3->hash($x,$len_str),$len_str)); //same issue as above
 	return $b3->hash($b3->hash($x,$len_str),$len_str);
+}
+
+function file_force_contents($dir, $contents){
+	$parts = explode('/', $dir);
+	$file = array_pop($parts);
+	$dir = '';
+	foreach($parts as $part)
+		if(!is_dir($dir .= "/$part")) mkdir($dir);
+	file_put_contents("$dir/$file", $contents);
+	
+	echo '\nfile written, '.$dir.'/'.$file.'\n';
 }
