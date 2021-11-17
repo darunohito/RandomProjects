@@ -62,7 +62,7 @@ class Miner
     private $confirm;
     private $found;
     private $height;
-	private $dagHeight;
+	private $epoch;
     private $testnet;
 	  
 	/**
@@ -106,18 +106,14 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 			$pt = $pt_r;
 		}
 		
-		$res = $this->update_block();
-		if (!$res) {
-			die("ERROR: Could not get mining info from the node\n");
-		}
-		
 		$base = $this->publicKey."-".$this->block."-".$this->diff;
 		$daglength = $this->size*(SELF::Mb);
 		echo "bit length: " . $daglength . "\n";
 		
 		//build the DAG
 		//$dagger = $this->produce_dag($base,$daglength);
-		$dagger = $this->produce_dag($base,$daglength/1024);
+		//$dagger = $this->produce_dag($base,$daglength/1024);
+		$this->update_dag();
 		
 		//mine the DAG
 		$nonce = $this->mine($dagger);
@@ -164,6 +160,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		$this->k = 1; 
 		$this->w = '4'; //NOT SURE WHAT VALUE THIS IS ACTUALLY SUPPOSED TO BE >.<
 		//$this->w = 4;
+		$this->epoch = (int)(floor($this->height/$this->epochtime));
     }
 	
 	/**
@@ -228,14 +225,14 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		//$daglen_str = var_export($daglength, true);
 		//$base_str = var_export($base, true);
 		
-		$epoch_str = (string)((int)(floor($this->height/$this->epochtime)));
+		$epoch_str = $this->epoch;
 		$dag_str = var_export($o, true);
 		$base_str_short = $b3->hash($seed,'16'); //shorthash record of base
 		/*$var = "<?php\n\n\$epoch_cache = $epoch_str;\n\$daglength_cache = $daglen_str;\n\$base_cache = $base_str;\n\$dagger_cache = $dag_str;\n?>"; */
 		//file_put_contents('DAG_E'.$epoch_str.'_L'.$daglen_str.'_.php', $var);
 		$var = "<?php\n\n\$dagger_cache = $dag_str;\n?>";
-		
-		file_force_contents('dag_cache/DAG_E_'.$epoch_str.'_L_'.$length.'_B_'.$base_str_short.'.php', $var);
+		$cwd = str_replace('\\', '/', getcwd());
+		file_force_contents($cwd.'/dag_cache/DAG_E='.$epoch_str.'_L='.$length.'_B='.$base_str_short.'.php', $var);
 		unset($var); //free memory
 		return $o;
 	}
@@ -409,15 +406,19 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 	
 	function update_dag(): bool
 	{
-		
+		$res = $this->update_block();
+		if (!$res) {
+			die("ERROR: Could not get mining info from the node\n");
+		}
 		//have correct dag(s) in cache?
 			//if so, pull it into memory 
 		//if not,
 		
-		if((int)$this->height - $this->epochtime > $this->$dagHeight)
-		{
-			//update $dagHeight
+		if(intval($this->height) - $this->epochtime > (int)(ceil($this->height/$this->epoch))) {
+			//update $epoch
+			$this->epoch = (int)(floor($this->height/$this->epochtime));
 			//generate dag 
+			
 			//want to pregenerate next epoch's dag? if so,
 				//generate next dag 
 			//new epoch time for next epoch? (depends on gamification implementation)
@@ -482,8 +483,8 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 	}
 
 	public function get_dagsize()
-	{ //Not decided yet for Jengas blockchain, but will likely not scale over time in the same way as Ethereum DAG
-		return $this->size *Mb; // + ($block['height'] / $params["epochtime"]) * $params["n_inc"];
+	{ //Not decided yet for Jengas blockchain, but will likely not scale over time in quite the same way as Ethereum DAG
+		return $this->size * SELF::Mb; // + ($block['height'] / $params["epochtime"]) * $params["n_inc"];
 	}
 
 	public function get_daggerset($params, $block)
@@ -713,8 +714,12 @@ function file_force_contents($dir, $contents){
 	$file = array_pop($parts);
 	$dir = '';
 	foreach($parts as $part)
-		if(!is_dir($dir .= "/$part")) mkdir($dir);
+	$dir .= "$part/";
+		if(!is_dir($dir)) {
+			if(!mkdir($dir,0777,true)) {
+				echo "\ndir: ".$dir."\n";
+				die("Failed to create DAG cache directory & file!\n");
+			}
+		}
 	file_put_contents("$dir/$file", $contents);
-	
-	echo '\nfile written, '.$dir.'/'.$file.'\n';
-}
+} 
