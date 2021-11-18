@@ -424,8 +424,8 @@ class BLAKE3
 		return $hashes;			
 		}
 		
-	function XOF_output($hash, $XOF_digest_length)
-		{
+	function XOF_output($hash, $XOF_digest_length, $out_format = 'hex')
+		{ //last argument accepts 'hex', 'int', or 'bin'
 		// Output bytes. By default 32
 
 		$cycles 	= ceil($XOF_digest_length/self::BLOCK_SIZE);			
@@ -445,12 +445,24 @@ class BLAKE3
 		$last_bytes = self::BLOCK_SIZE-($XOF_digest_length % self::BLOCK_SIZE);
 		
 		if ($last_bytes!=self::BLOCK_SIZE) 		 
-			$XofHash = substr($XofHash,0,-$last_bytes);		
-		
-		return bin2hex($XofHash);		
+			$XofHash = substr($XofHash,0,-$last_bytes);	
+
+		if (strcmp($out_format,'bin') == 0) {
+			return $XofHash; 
+			}
+		else if (strcmp($out_format,'hex') == 0) {
+			return bin2hex($XofHash); 
+			} 
+		else if (strcmp($out_format,'int') == 0) {
+			return decode_int($XofHash);	
+			}
+		else {
+			die('invalid format argument to XOF_output / blake3 function');
+			}
+			
 		}		
 	
-	function hash($block, $XOF_digest_length = 32)
+	function hash($block, $XOF_digest_length = 32, $XOF_out_format = 'hex')
 		{
 		if (strlen($block) <= self::CHUNK_SIZE) 
 			$is_root = true;
@@ -491,7 +503,18 @@ class BLAKE3
 			}			
 		else 	$hash = $tree[0];
 					
-		return self::XOF_output($hash,$XOF_digest_length);
+		return self::XOF_output($hash,$XOF_digest_length,$XOF_out_format);
 		}
 	}
 
+function decode_int($s)
+{
+    // Unencode an integer x from a string using a big-endian scheme 
+    $x = '';
+    for ($i=0; $i<strlen($s); $i++)
+	{
+        $x = bcmul($x,'256');
+        $x = bcadd($x, ord($s[$i]));
+	}
+    return $x;
+}

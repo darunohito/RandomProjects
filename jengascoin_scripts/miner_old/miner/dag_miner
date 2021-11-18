@@ -197,14 +197,15 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 	{
 		$b3 = new BLAKE3();
 		$epoch_str = $this->epoch;
-		$base_str_short = $b3->hash($seed,'16'); //shorthash record of base
+		//shorthash record of base, in base58
+		$base_str_short = bc_arb_encode($b3->hash($seed,16,'int'),'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'); 
 		$cwd = str_replace('\\', '/', getcwd());
-		$dag_path = $cwd.'/dag_cache/DAG_E='.$epoch_str.'_L='.$length.'.php';
+		$dag_path = $cwd.'/dag_cache/DAG_E='.$epoch_str.'_L='.$length.'_B='.$base_str_short.'.php';
 		if(!file_exists($dag_path))
 		{
 		
 		echo "Creating DAG\n";
-		$blakehash = bchexdec($b3->hash($seed,'64'));
+		$blakehash = $b3->hash($seed,64,'int');
 		echo "Blakehash: $blakehash\n";
 		$picker = bcpowmod($blakehash, $this->w, $this->P);
 		$init = $picker;
@@ -216,11 +217,11 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 			$x = $picker = bcmod(bcmul($picker,$init),$this->P);
 			for($i2=0; $i2++; $i2<$this->k) {
 				$x = gmp_xor($x,$o[(bcmod($x,(string)$i))]);
-			}
+			} //might be worth trying to encode_int the entire output string instead of doing it incrementally?
 			$o .= encode_int(bcpowmod($x, $this->w, $this->P), '64');
-			if(($i / $length) > ($percentdone + 0.0001))
+			if(($i / $length) > $percentdone)
 			{
-				$percentdone = ($i / $length);
+				$percentdone = ($i / $length) + 0.0001;
 				echo chr(8).chr(8).chr(8).chr(8).chr(8).chr(8). str_pad(number_format($percentdone*100,2,".",""),5,STR_PAD_LEFT) ."%";
 			}
 		}
@@ -294,7 +295,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 	public function hashimoto($dag, $dagsize, $header, $nonce) 
 	{
 		$m = bcfloor(bcsub(bcdiv($dagsize,'2'),1));
-		$mix = bc_hexdec(blake3($nonce.$header,'64'));
+		$mix = blake3($nonce.$header,64,'int');
 		for($i=0; $i<$this->accesses; $i++) {
 			//mix ^= dag[m + (mix % 2**64) % m]
 			$dagstr = '';
@@ -312,13 +313,13 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 			//echo "dag[$i2]: \n     " . decode_int($dagstr) . "\n";
 			//echo "mix: \n     " . $mix . "\n\n";
 		}
-		return bc_hexdec(dbl_blake3($mix,'64'));
+		return dbl_blake3(encode_int($mix,64),64,'int');
 	}
 	
 	public function quick_hashimoto($seed, $dagsize, $header, $nonce)
 	{
 		$m = bcfloor(bcsub(bcdiv($dagsize,'2'),1));
-		$mix = bc_hexdec(blake3($nonce.$header,'64'));
+		$mix = blake3($nonce.$header,64,'int');
 		for($i=0; $i<$this->accesses; $i++) {
 			//mix ^= dag[m + (mix % 2**64) % m]
 			$dagstr = '';
@@ -336,7 +337,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 			//echo "dag[$i2]: \n     " . decode_int($dagstr) . "\n";
 			//echo "mix: \n     " . $mix . "\n\n";
 		}
-		return bc_hexdec(dbl_blake3($mix,'64'));
+		return dbl_blake3(encode_int($mix,64),64,'int');
 	}
 	
 	public function verify($daggerset, $block, $nonce) 
@@ -458,11 +459,11 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 			}
 			elseif($p == 0)
 			{
-				$cache[$p] = bcpowmod(blake3($seed,'64'), strval($w), $P);
+				$cache[$p] = bcpowmod(blake3($seed,64,'int'), strval($w), $P);
 			}
 			else
 			{
-				$x = bcpowmod(blake3($seed,'64'), strval($p+1) * $w, $P);
+				$x = bcpowmod(blake3($seed,64,'int'), strval($p+1) * $w, $P);
 				//for _ in range(params["k"]):
 				for ($i=0; $i<$this->k; $i++)
 				{
@@ -479,10 +480,10 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 	public function get_prevhash($n) //$n is just block height I think
 	{
 		if ($n <= 0)
-		{	// return genesis block hash
-			return(blake3('Let there be light','64'));
+		{	// return genesis block 
+			return 'Satoshi is a steely-eyed missile man';
 		} else { //return previous block hash (requires update() prior to query)
-			return($this->block);
+			return $this->block;
 		}
 	}
 
@@ -498,29 +499,32 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 
 	public function get_dagsize()
 	{ //Not decided yet for Jengas blockchain, but will likely not scale over time in quite the same way as Ethereum DAG
-		return $this->size * SELF::Mb; // + ($block['height'] / $params["epochtime"]) * $params["n_inc"];
+		return floor($this->size * SELF::Mb / 1024); // + ($block['height'] / $params["epochtime"]) * $params["n_inc"];
 	}
 
-	public function get_daggerset($params, $block)
+	public function get_daggerset()
 	{
-		$dagsz = get_dagsize($params, $block);
-		$seedset = get_seedset($params, $block);
+		$dagsz = get_dagsize();
+		$seedset = get_seedset();
 		if ($seedset["front_hash"] <= 0)
-		{
+		{	//for first epoch
 			# No back buffer is possible, just make front buffer
-			return "{front: {dag: " . produce_dag($params, $seedset['front_hash'], $dagsz) . ", block_number: 0}}";
+			produce_dag($seedset['front_hash'], $dagsz);
+			//return "{front: {dag: " . produce_dag($params, $seedset['front_hash'], $dagsz) . ", block_number: 0}}";
 		}
 		else
 		{
-			return "{front: {dag: " . produce_dag($seedset["front_hash"], $dagsz) . ", block_number: " . $seedset["front_number"] . "},
-			back: {dag: " . produce_dag($seedset["back_hash"], $dagsz) . ", block_number: " . $seedset["back_number"] . "}}";
+			produce_dag($seedset["front_hash"], $dagsz);
+			produce_dag($seedset["back_hash"], $dagsz);
+			/*return "{front: {dag: " . produce_dag($seedset["front_hash"], $dagsz) . ", block_number: " . $seedset["front_number"] . "},
+			back: {dag: " . produce_dag($seedset["back_hash"], $dagsz) . ", block_number: " . $seedset["back_number"] . "}}";*/
 		}
 	}
 
 	public function light_verify($header, $nonce)
 	{
-		$seedset = get_seedset($block);
-		$result = quick_hashimoto($seedset["front_hash"], get_dagsize($params, $block), $params, decode_int($block['prevhash']), $nonce);
+		$seedset = get_seedset();
+		$result = quick_hashimoto($seedset["front_hash"], get_dagsize(), decode_int($block['prevhash']), $nonce);
 		return $result * $params["diff"] < pow(2, 256);
 	}
 
@@ -689,7 +693,7 @@ function decode_int($s)
     return $x;
 }
 
-function blake3($x, $len_str)
+function blake3($x, $len, $out_format = 'hex')
 {
 	$b3 = new BLAKE3();
 	//$b3->hash($seed) ???
@@ -701,11 +705,11 @@ function blake3($x, $len_str)
 	{
 		$x = encode_int($x, '64');
 	}
-	//return decode_int($b3->hash($x,$len_str)); //not sure where utils is in original eth_stuff.py. We don't have access to it so ?
-	return $b3->hash($x,$len_str);
+	//return decode_int($b3->hash($x,$len_str)); 
+	return $b3->hash($x,$len,$out_format);
 }
 
-function dbl_blake3($x,$len_str)
+function dbl_blake3($x,$len,$out_format = 'hex')
 {
 	$b3 = new BLAKE3();
 	//$b3->hash($seed); ???
@@ -720,7 +724,7 @@ function dbl_blake3($x,$len_str)
 	}
 	//return decode_int(utils.sha3(utils.sha3(x)))
 	//return decode_int($b3->hash($b3->hash($x,$len_str),$len_str)); //same issue as above
-	return $b3->hash($b3->hash($x,$len_str),$len_str);
+	return $b3->hash($b3->hash($x,$len,$out_format),$len,$out_format);
 }
 
 function file_force_contents($dir, $contents){
