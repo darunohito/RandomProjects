@@ -64,6 +64,8 @@ class Miner
     private $height;
 	private $epoch;
     private $testnet;
+	
+	private $dagger; //NOT SURE IF THIS SHOULD BE HERE LOL >.>
 	  
 	/**
      * miner constructor.
@@ -107,26 +109,21 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		}
 		
 		$this->update_block();
-		$base = $this->publicKey."-".$this->block."-".$this->diff;
-		$daglength = $this->size*(SELF::Mb);
-		echo "bit length: " . $daglength . "\n";
+		//$dagger = get_daggerset(); //this variable needs to be accessed in parallel in future revision
 		
-		//build the DAG
-		//$dagger = $this->produce_dag($base,$daglength);
-		$dagger = $this->produce_dag($base,$daglength/1024);
-		//$this->update_dag();
-		
+		/********************** TEST ONLY CODE **********************/
 		//mine the DAG
-		$nonce = $this->mine($dagger);
+		$nonce = $this->mine($this->dagger);
 		echo "nonce found! :o\n";
 		
 		//check the nonce
-		if($this->verify($dagger, $this->block, $nonce)) {
+		if($this->verify($this->dagger, $this->block, $nonce)) {
 			echo "nonce good! :D\n";
 		} else {
 			echo "nonce bad >:(\n";
 		}
 		exit(0);
+		/********************** TEST ONLY CODE **********************/
 	}
 	
 	/**
@@ -150,6 +147,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
         $this->found = 0;
 		$this->max_target = bcsub(bcpow(16,127) ,1); //63.5-byte max target/difficulty
 		$this->target = $this->max_target;
+		$this->height = 0; 
 		
 		// ethash stuff
 		$this->P = bcsub(bcpow(2,512),38117);
@@ -161,7 +159,8 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		$this->k = 1; 
 		$this->w = '4'; //NOT SURE WHAT VALUE THIS IS ACTUALLY SUPPOSED TO BE >.<
 		//$this->w = 4;
-		$this->epoch = 0;
+		$this->epoch = -1; //force get_daggerset in first run of update_block;
+		$this->dagger = '';
     }
 	
 	/**
@@ -193,56 +192,55 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
         }
     }
 	
-	public function produce_dag($seed, $length) 
+	public function produce_dag($seed, $length, $epoch) 
 	{
 		$b3 = new BLAKE3();
-		$epoch_str = $this->epoch;
+		$epoch_str = (string)$epoch;
 		//shorthash record of base, in base58
 		$base_str_short = bc_arb_encode($b3->hash($seed,16,'int'),'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'); 
 		$cwd = str_replace('\\', '/', getcwd());
-		$dag_path = $cwd.'/dag_cache/DAG_E='.$epoch_str.'_L='.$length.'_B='.$base_str_short.'.php';
+		//$dag_path = $cwd.'/dag_cache/DAG_E='.$epoch_str.'_L='.$length.'_B='.$base_str_short.'.php';
+		$dag_path = $cwd.'/dag_cache/DAG_E='.$epoch_str.'_L='.$length.'_B='.$base_str_short;
 		if(!file_exists($dag_path))
 		{
-		
-		echo "Creating DAG\n";
-		$blakehash = $b3->hash($seed,64,'int');
-		echo "Blakehash: $blakehash\n";
-		$picker = bcpowmod($blakehash, $this->w, $this->P);
-		$init = $picker;
-		$o = encode_int($picker, '64');
-		$percentdone = 0;
-		echo "DAG percent generated: ". str_pad(number_format($percentdone*100,1,".",""),5,STR_PAD_LEFT) ."%";
-		for($i=1; $i<$length; $i++) {
-			// $x = $picker = ($picker * $init) % P
-			$x = $picker = bcmod(bcmul($picker,$init),$this->P);
-			for($i2=0; $i2++; $i2<$this->k) {
-				$x = gmp_xor($x,$o[(bcmod($x,(string)$i))]);
-			} //might be worth trying to encode_int the entire output string instead of doing it incrementally?
-			$o .= encode_int(bcpowmod($x, $this->w, $this->P), '64');
-			if(($i / $length) > $percentdone)
-			{
-				$percentdone = ($i / $length) + 0.0001;
-				echo chr(8).chr(8).chr(8).chr(8).chr(8).chr(8). str_pad(number_format($percentdone*100,2,".",""),5,STR_PAD_LEFT) ."%";
+			
+			echo "Creating DAG for epoch ".$epoch_str."\n";
+			$blakehash = $b3->hash($seed,64,'int');
+			echo "Blakehash: $blakehash\n";
+			$picker = bcpowmod($blakehash, $this->w, $this->P);
+			$init = $picker;
+			$o = encode_int($picker, '64');
+			$percentdone = 0;
+			echo "DAG percent generated: ". str_pad(number_format($percentdone*100,1,".",""),5,STR_PAD_LEFT) ."%";
+			for($i=1; $i<$length; $i++) {
+				// $x = $picker = ($picker * $init) % P
+				$x = $picker = bcmod(bcmul($picker,$init),$this->P);
+				for($i2=0; $i2++; $i2<$this->k) {
+					$x = gmp_xor($x,$o[(bcmod($x,(string)$i))]);
+				} //might be worth trying to encode_int the entire output string instead of doing it incrementally?
+				$o .= encode_int(bcpowmod($x, $this->w, $this->P), '64');
+				if(($i / $length) > $percentdone)
+				{
+					$percentdone = ($i / $length) + 0.0001;
+					echo chr(8).chr(8).chr(8).chr(8).chr(8).chr(8). str_pad(number_format($percentdone*100,2,".",""),5,STR_PAD_LEFT) ."%";
+				}
 			}
-		}
-		echo "\nDAG completed\n";
-		echo "DAG length: " . strlen($o) . "\n";
-		
-		//log the DAG, DAG length, DAG epoch, and DAG seed (base)
-		//$epoch_str = var_export((int)(floor($this->height/$this->epochtime)), true);
-		//$daglen_str = var_export($daglength, true);
-		//$base_str = var_export($base, true);
-		$dag_str = var_export($o, true);
-		
-		/*$var = "<?php\n\n\$epoch_cache = $epoch_str;\n\$daglength_cache = $daglen_str;\n\$base_cache = $base_str;\n\$dagger_cache = $dag_str;\n?>"; */
-		//file_put_contents('DAG_E'.$epoch_str.'_L'.$daglen_str.'_.php', $var);
-		$var = "<?php\n\n\$dagger_cache = $dag_str;\n?>";
-		
-		file_force_contents($cwd.'/dag_cache/DAG_E='.$epoch_str.'_L='.$length.'.php', $var);
-		unset($var); //free memory
-		return $o;
+			echo "\nDAG completed\n";
+			echo "DAG length: " . strlen($o) . "\n";
+			
+			//log the DAG, DAG length, DAG epoch, and DAG seed (base)
+			$dag_str = var_export($o, true);
+			/* $var = "<?php\n\n\$dagger_cache = $dag_str;\n?>"; */
+			/* file_force_contents($cwd.'/dag_cache/DAG_E='.$epoch_str.'_L='.$length.'.php', $var); */
+			
+			file_force_contents($cwd.'/dag_cache/DAG_E='.$epoch_str.'_L='.$length.'_B='.$base_str_short, $dag_str);
+			unset($var); //free memory
+			return $o;
 		
 		} else {
+			//include $dag_path;
+			//return $dagger_cache;
+			echo "DAG for epoch ".$epoch_str." retreived from cache\n";
 			$dag_file = file_get_contents($dag_path);
 			return $dag_file;
 		}
@@ -286,14 +284,14 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 				echo "  ".chr(8).chr(8).chr(8).chr(8).chr(8).chr(8).chr(8)."\r\rBest hash: $best_result, nonces tried: $nonces_tried";
 			}
 		}
-		$nonce_64 = bc_arb_encode($nonce_int,'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz');
-		echo "\nReturned nonce: $nonce_64\n";
+		$nonce_58 = bc_arb_encode($nonce_int,'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz');
+		echo "\nReturned nonce: $nonce_58\n";
 		
 		return $nonce;
 	}
 	
 	public function hashimoto($dag, $dagsize, $header, $nonce) 
-	{
+	{ //if possible, re-implementing this to perform byte-wise operations (instead of string-encoded integer operations) would be much more efficient
 		$m = bcfloor(bcsub(bcdiv($dagsize,'2'),1));
 		$mix = blake3($nonce.$header,64,'int');
 		for($i=0; $i<$this->accesses; $i++) {
@@ -380,9 +378,15 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
         }
 
         $this->height = $data['height'];
-		$this->epoch = (int)(floor($this->height/$this->epochtime));
+		
 		echo "\nepoch: ".$this->epoch."\n";
 		$this->target = bcsub($this->max_target, $this->diff);
+		
+		if($this->epoch < (int)(floor($this->height/$this->epochtime))) {
+			echo "\nGetting new daggerset\n";
+			$this->epoch = (int)(floor($this->height/$this->epochtime));
+			$this->dagger = $this->get_daggerset(); //this variable needs to be accessed in parallel in future revision
+		}
 		
 		if(!isset($pooltarget))
 		{
@@ -416,34 +420,6 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		unset($b);
         return true;
     }
-	
-	function update_dag(): bool
-	{
-		$res = $this->update_block();
-		if (!$res) {
-			die("ERROR: Could not get mining info from the node\n");
-		}
-		//have correct dag(s) in cache?
-			//if so, pull it into memory 
-		//if not,
-		
-		if(intval($this->height) - $this->epochtime > (int)(ceil($this->height/$this->epoch))) {
-			//update $epoch
-			$this->epoch = (int)(floor($this->height/$this->epochtime));
-			//generate dag 
-			
-			//want to pregenerate next epoch's dag? if so,
-				//generate next dag 
-			//new epoch time for next epoch? (depends on gamification implementation)
-				//if so, store it in $this->epochtime
-			//save new daggerset into cache file
-			
-			
-			return true;
-		} else {
-			return false;
-		}
-	}
 	
 	// NEW FUNCTIONS START ***********************************************************
 	public function quick_calc($seed, $p)
@@ -480,20 +456,61 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 	public function get_prevhash($n) //$n is just block height I think
 	{
 		if ($n <= 0)
-		{	// return genesis block 
-			return 'Satoshi is a steely-eyed missile man';
-		} else { //return previous block hash (requires update() prior to query)
-			return $this->block;
+		{	// return genesis block  // $this->publicKey."-".$block."-".$diff;
+			$base = array(
+				"block"		=> "Satoshi is a steely-eyed missile man",
+				"diff"		=> "1",
+				"pubkey"	=> $this->publicKey );
+			/*
+			$base["block"] = "Satoshi is a steely-eyed missile man";
+			$base["diff"] = "1";
+			$base["pubkey"] = $this->publicKey; */
+		} else { //return previous block hash
+		
+			$res = file_get_contents($this->node."/api.php?q=getBlock&height=".$n);		
+			$info = json_decode($res, true);
+			if ($info['status'] != self::NODE_STATUS_OK) {
+				echo "\nNode not OK, status: ".$info['status']."\n";
+				return '';
+			}
+
+			$data = $info['data'];
+			$base = array(
+				"block"		=> $data['id'],
+				"diff"		=> $data['difficulty'],
+				"pubkey"	=> $this->publicKey 
+				);
+			/*
+			$base["block"] = $data['id'];
+			$base["diff"] = $data['difficulty'];
+			$base["pubkey"] = $this->publicKey;	*/
 		}
+	return $base;
 	}
 
 	public function get_seedset()
 	{
-		$seedset = [];
-		$seedset["back_number"] = (int)$this->height - ((int)$this->height % $this->epochtime);
-		$seedset["back_hash"] = get_prevhash($seedset["back_number"]);
-		$seedset["front_number"] = max($seedset["back_number"] - $this->epochtime, 0);
-		$seedset["front_hash"] = get_prevhash($seedset["front_number"]);
+		$back_num = (int)$this->height - ((int)$this->height % $this->epochtime);
+		$front_num = max($back_num - $this->epochtime, 0);
+		$back_base = $this->get_prevhash($back_num);
+		$front_base = $this->get_prevhash($front_num);
+		
+		$seedset = array(
+			"pubkey"		=> $back_base["pubkey"],
+			"back_number" 	=> $back_num,
+			"back_block"	=> $back_base["block"],
+			"back_diff" 	=> $back_base["diff"],
+			"back_epoch" 	=> (int)(floor($back_num/$this->epochtime)),
+			"back_hash"		=> '', //initialize
+			"front_number" 	=> $front_num,
+			"front_block"	=> $front_base["block"],
+			"front_diff" 	=> $front_base["diff"],
+			"front_epoch" 	=> (int)(floor($front_num/$this->epochtime)),
+			"front_hash"		=> '' //initialize
+			);
+		$seedset["back_hash"] = $seedset["pubkey"]."-".$seedset["back_block"]."-".$seedset["back_diff"];
+		$seedset["front_hash"] = $seedset["pubkey"]."-".$seedset["front_block"]."-".$seedset["front_diff"];
+		
 		return $seedset;
 	}
 
@@ -504,21 +521,23 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 
 	public function get_daggerset()
 	{
-		$dagsz = get_dagsize();
-		$seedset = get_seedset();
-		if ($seedset["front_hash"] <= 0)
+		$dagsz = $this->get_dagsize();
+		$seedset = $this->get_seedset();
+		if ($seedset["front_epoch"] <= 0)
 		{	//for first epoch
 			# No back buffer is possible, just make front buffer
-			produce_dag($seedset['front_hash'], $dagsz);
+			//$base = $this->publicKey."-".$this->block."-".$this->diff; 
+			$o = $this->produce_dag($seedset['front_hash'], $dagsz, $seedset["front_epoch"]);
 			//return "{front: {dag: " . produce_dag($params, $seedset['front_hash'], $dagsz) . ", block_number: 0}}";
 		}
 		else
 		{
-			produce_dag($seedset["front_hash"], $dagsz);
-			produce_dag($seedset["back_hash"], $dagsz);
+			$this->produce_dag($seedset["back_hash"], $dagsz, $seedset["back_epoch"]);
+			$o = $this->produce_dag($seedset["front_hash"], $dagsz, $seedset["front_epoch"]);
 			/*return "{front: {dag: " . produce_dag($seedset["front_hash"], $dagsz) . ", block_number: " . $seedset["front_number"] . "},
 			back: {dag: " . produce_dag($seedset["back_hash"], $dagsz) . ", block_number: " . $seedset["back_number"] . "}}";*/
 		}
+		return $o;
 	}
 
 	public function light_verify($header, $nonce)
