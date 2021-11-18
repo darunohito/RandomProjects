@@ -31,7 +31,7 @@ class Miner
     public const NODE_STATUS_OK = 'ok';
 	//public const P = 2**512 - 38117;              # Safe Prime for hashing and random number generation
 	public const TwoExp64 = '18446744073709551616'; //to improve efficiency
-	public const Mb = 983040 * 8; // NUM_BITS, megabyte, multiple of 65536
+	public const MB = 983040; // * 8; // NUM_BYTES, megabyte, multiple of 65536
 	//public const Gb = 999948288 * 8; // NUM_BITS, gigabyte, multiple of 65536
 	//public const n = 4000055296 * 8; // NUM_BITS,  # Size of the dataset (4 Gigabytes); MUST BE MULTIPLE OF 65536
     //public const n_inc = 65536;      	# Increment in value of n per period; MUST BE MULTIPLE OF 65536 
@@ -156,7 +156,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		$this->epochtime = 10080; // 10080 yields DAG updates twice per week @ 30s blocktimes, this won't be constant in the full implementation!
 		$this->accesses = 200; 
 		$this->cache_size = 2500;
-		$this->k = 1; 
+		$this->k = 32; //number of parents per node
 		$this->w = '4'; //NOT SURE WHAT VALUE THIS IS ACTUALLY SUPPOSED TO BE >.<
 		//$this->w = 4;
 		$this->epoch = -1; //force get_daggerset in first run of update_block;
@@ -194,54 +194,56 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 	
 	public function produce_dag($seed, $length, $epoch) 
 	{
-		$b3 = new BLAKE3();
 		$epoch_str = (string)$epoch;
+		$length64 = floor($length/64);
 		//shorthash record of base, in base58
-		$base_str_short = bc_arb_encode($b3->hash($seed,16,'int'),'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'); 
+		$base_str_short = bc_arb_encode(blake3($seed,16,'int'),'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'); 
 		$cwd = str_replace('\\', '/', getcwd());
 		//$dag_path = $cwd.'/dag_cache/DAG_E='.$epoch_str.'_L='.$length.'_B='.$base_str_short.'.php';
-		$dag_path = $cwd.'/dag_cache/DAG_E='.$epoch_str.'_L='.$length.'_B='.$base_str_short;
+		$dag_path = $cwd.'/dag_cache/DAG_E='.$epoch_str.'_K='.$this->k.'_L='.$length.'_B='.$base_str_short.".txt";
 		if(!file_exists($dag_path))
 		{
 			
 			echo "Creating DAG for epoch ".$epoch_str."\n";
-			$blakehash = $b3->hash($seed,64,'int');
+			$blakehash = blake3($seed,64,'int');
 			echo "Blakehash: $blakehash\n";
 			$picker = bcpowmod($blakehash, $this->w, $this->P);
 			$init = $picker;
 			$o = encode_int($picker, '64');
 			$percentdone = 0;
 			echo "DAG percent generated: ". str_pad(number_format($percentdone*100,1,".",""),5,STR_PAD_LEFT) ."%";
-			for($i=1; $i<$length; $i++) {
+			for($i=1; $i<$length64; $i++) {
 				// $x = $picker = ($picker * $init) % P
 				$x = $picker = bcmod(bcmul($picker,$init),$this->P);
 				for($i2=0; $i2++; $i2<$this->k) {
 					$x = gmp_xor($x,$o[(bcmod($x,(string)$i))]);
-				} //might be worth trying to encode_int the entire output string instead of doing it incrementally?
+				} 
 				$o .= encode_int(bcpowmod($x, $this->w, $this->P), '64');
-				if(($i / $length) > $percentdone)
+				if(($i / $length64) > $percentdone)
 				{
-					$percentdone = ($i / $length) + 0.0001;
 					echo chr(8).chr(8).chr(8).chr(8).chr(8).chr(8). str_pad(number_format($percentdone*100,2,".",""),5,STR_PAD_LEFT) ."%";
+					$percentdone = ($i / $length64) + 0.0001;
 				}
 			}
 			echo "\nDAG completed\n";
 			echo "DAG length: " . strlen($o) . "\n";
-			
+			$o_hex = bin2hex($o); //maybe will fix the length mismatch issue? at least for caching.
 			//log the DAG, DAG length, DAG epoch, and DAG seed (base)
-			$dag_str = var_export($o, true);
+			//$dag_str = var_export($o, true);
+			$dag_str = var_export($o_hex, true);
 			/* $var = "<?php\n\n\$dagger_cache = $dag_str;\n?>"; */
 			/* file_force_contents($cwd.'/dag_cache/DAG_E='.$epoch_str.'_L='.$length.'.php', $var); */
 			
-			file_force_contents($cwd.'/dag_cache/DAG_E='.$epoch_str.'_L='.$length.'_B='.$base_str_short, $dag_str);
-			unset($var); //free memory
+			file_force_contents($cwd.'/dag_cache/DAG_E='.$epoch_str.'_K='.$this->k.'_L='.$length.'_B='.$base_str_short.".txt", $dag_str);
+			//unset($var); //free memory
+			unset($o_hex);
 			return $o;
 		
 		} else {
-			//include $dag_path;
-			//return $dagger_cache;
 			echo "DAG for epoch ".$epoch_str." retreived from cache\n";
-			$dag_file = file_get_contents($dag_path);
+			$dag_file = file_get_contents($dag_path,false,null,1,$length*2); //convert back from hex?
+			$dag_file = hex2bin($dag_file);
+			echo "DAG length: " . strlen($dag_file) . "\n";
 			return $dag_file;
 		}
 	}
@@ -249,7 +251,6 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 	
 	public function mine($daggerset) 
 	{
-		// nonce = randint(0, 2**64)
 		$nonces_tried = 0;
 		$nonce = openssl_random_pseudo_bytes(8);
 		$nonce_int = decode_int($nonce);
@@ -258,9 +259,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		$best_result = '';
 		while (1) 
 		{
-			//$result = hashimoto($daggerset, get_dagsize(params, block),params, decode_int(block.prevhash), $nonce);
-			//$result = $this->hashimoto($daggerset, bcmul($this->size,(string)SELF::Mb),$this->block, $nonce);
-			$result = $this->hashimoto($daggerset, (string)strlen($daggerset),$this->block, $nonce);
+			$result = $this->hashimoto($daggerset, $this->get_dagsize(),$this->block, $nonce);
 			if (bccomp($result,$this->target) <= 0) 
 			{
 				echo "\nSolution:  $result\n";
@@ -294,20 +293,25 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 	{ //if possible, re-implementing this to perform byte-wise operations (instead of string-encoded integer operations) would be much more efficient
 		$m = bcfloor(bcsub(bcdiv($dagsize,'2'),1));
 		$mix = blake3($nonce.$header,64,'int');
+		$i4 = $i4max = 0;
 		for($i=0; $i<$this->accesses; $i++) {
 			//mix ^= dag[m + (mix % 2**64) % m]
 			$dagstr = '';
 			$i2 = bcadd($m,bcmod(bcmod($mix,SELF::TwoExp64),$m));
 			$mix256 = encode_int($mix,'64');
-			for($i3=0; $i3<strlen($mix256); $i3++) //If there's a way to reference an 64-byte string in a bytewise way, that would be a great 
+			for($i3=0; $i3<strlen($mix256); $i3++) //If there's a way to reference an 64-byte string in a bytewise way, that would be a *great* 
 			{
-				$dagstr .= $dag[bcadd($i2,(string)$i3)];
+				$i4 = bcadd($i2,(string)$i3);
+				//echo "\ni4: $i4";
+				$dagstr .= $dag[(int)$i4];
 				if(bccomp(bcadd($i2,(string)($i3+1)),$dagsize) >= 0)
 				{
 					$i2 = '0';
-				}					
+				}		
+				if ($i4 > $i4max)	$i4max = $i4; //just for testing
 			}
 			$mix = gmp_xor(decode_int($mix256),decode_int($dagstr));
+			//echo "\ni4max: ".$i4max."\n";
 			//echo "dag[$i2]: \n     " . decode_int($dagstr) . "\n";
 			//echo "mix: \n     " . $mix . "\n\n";
 		}
@@ -340,8 +344,8 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 	
 	public function verify($daggerset, $block, $nonce) 
 	{
-		//$result = $this->hashimoto($daggerset, bcmul($this->size,(string)SELF::Mb),$this->block, $nonce);
-		$result = $this->hashimoto($daggerset, (string)strlen($daggerset),$this->block, $nonce);
+		//$result = $this->hashimoto($daggerset, bcmul($this->size,(string)SELF::MB),$this->block, $nonce);
+		$result = $this->hashimoto($daggerset, $this->get_dagsize(), $this->block, $nonce);
 		return (bccomp($result,$this->target) <= 0);
 	}
 	
@@ -381,7 +385,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		$this->target = bcsub($this->max_target, $this->diff);
 		
 		if($this->epoch < (int)(floor($this->height/$this->epochtime))) {
-			echo "\nGetting new daggerset\n";
+			echo "\nAcquiring daggerset\n";
 			$this->epoch = (int)(floor($this->height/$this->epochtime));
 			$this->dagger = $this->get_daggerset(); //this variable needs to be accessed in parallel in future revision
 		}
@@ -459,10 +463,6 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 				"block"		=> "Satoshi is a steely-eyed missile man",
 				"diff"		=> "1",
 				"pubkey"	=> $this->publicKey );
-			/*
-			$base["block"] = "Satoshi is a steely-eyed missile man";
-			$base["diff"] = "1";
-			$base["pubkey"] = $this->publicKey; */
 		} else { //return previous block hash
 		
 			$res = file_get_contents($this->node."/api.php?q=getBlock&height=".$n);		
@@ -478,10 +478,6 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 				"diff"		=> $data['difficulty'],
 				"pubkey"	=> $this->publicKey 
 				);
-			/*
-			$base["block"] = $data['id'];
-			$base["diff"] = $data['difficulty'];
-			$base["pubkey"] = $this->publicKey;	*/
 		}
 	return $base;
 	}
@@ -504,7 +500,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 			"front_block"	=> $front_base["block"],
 			"front_diff" 	=> $front_base["diff"],
 			"front_epoch" 	=> (int)(floor($front_num/$this->epochtime)),
-			"front_hash"		=> '' //initialize
+			"front_hash"	=> '' //initialize
 			);
 		$seedset["back_hash"] = $seedset["pubkey"]."-".$seedset["back_block"]."-".$seedset["back_diff"];
 		$seedset["front_hash"] = $seedset["pubkey"]."-".$seedset["front_block"]."-".$seedset["front_diff"];
@@ -514,8 +510,9 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 
 	public function get_dagsize()
 	{ //Not decided yet for Jengas blockchain, but will likely not scale over time in quite the same way as Ethereum DAG
-		return floor($this->size * SELF::Mb / 1024); // + ($block['height'] / $params["epochtime"]) * $params["n_inc"];
-	}
+		//return floor($this->size * SELF::MB  / 1024); // + ($block['height'] / $params["epochtime"]) * $params["n_inc"];
+		return $this->size * SELF::MB;
+	} //I still haven't figured out why the dag is 1024 times bigger than intended lol
 
 	public function get_daggerset()
 	{
@@ -538,10 +535,10 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		return $o;
 	}
 
-	public function light_verify($header, $nonce)
+	public function light_verify($nonce)
 	{
 		$seedset = get_seedset();
-		$result = quick_hashimoto($seedset["front_hash"], get_dagsize(), decode_int($block['prevhash']), $nonce);
+		$result = quick_hashimoto($seedset["front_hash"], $this->get_dagsize(), $this->block, $nonce);
 		return $result * $params["diff"] < pow(2, 256);
 	}
 
@@ -689,11 +686,11 @@ function bcround($number, $precision = 0)
 function encode_int($x,$bytelen) 
 {
     // Encode an integer x as a string of bytelen characters using a big-endian scheme 
-    $o = '';
+    $o = "";
     for ($i=0; $i<($bytelen); $i++)
 	{
-        $o = chr(bcmod($x,'256')).$o;
-        $x = bcdiv($x,'256');
+        $o = chr(bcmod($x,'256',0)).$o;
+        $x = bcdiv($x,'256',0);
 	}
     return $o;
 }
@@ -713,11 +710,7 @@ function decode_int($s)
 function blake3($x, $len, $out_format = 'hex')
 {
 	$b3 = new BLAKE3();
-	//$b3->hash($seed) ???
 	
-	//if isinstance(x, (int, long)):
-	//x = encode_int(x)
-	//return decode_int(utils.sha3(x))
 	if(is_int($x))
 	{
 		$x = encode_int($x, '64');
@@ -729,11 +722,7 @@ function blake3($x, $len, $out_format = 'hex')
 function dbl_blake3($x,$len,$out_format = 'hex')
 {
 	$b3 = new BLAKE3();
-	//$b3->hash($seed); ???
-	
-	//if isinstance(x, (int, long)):
-	//x = encode_int(x)
-	//return decode_int(utils.sha3(utils.sha3(x)))
+	$b3_2 = new BLAKE3();
 	
 	if (is_int($x))
 	{
@@ -741,7 +730,7 @@ function dbl_blake3($x,$len,$out_format = 'hex')
 	}
 	//return decode_int(utils.sha3(utils.sha3(x)))
 	//return decode_int($b3->hash($b3->hash($x,$len_str),$len_str)); //same issue as above
-	return $b3->hash($b3->hash($x,$len,$out_format),$len,$out_format);
+	return $b3->hash($b3_2->hash($x,$len,$out_format),$len,$out_format);
 }
 
 function file_force_contents($dir, $contents){
