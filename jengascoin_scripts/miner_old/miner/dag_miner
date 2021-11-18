@@ -378,8 +378,6 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
         }
 
         $this->height = $data['height'];
-		
-		echo "\nepoch: ".$this->epoch."\n";
 		$this->target = bcsub($this->max_target, $this->diff);
 		
 		if($this->epoch < (int)(floor($this->height/$this->epochtime))) {
