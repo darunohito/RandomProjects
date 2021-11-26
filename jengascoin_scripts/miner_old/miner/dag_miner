@@ -109,7 +109,6 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		}
 		
 		$this->update_block();
-		//$dagger = get_daggerset(); //this variable needs to be accessed in parallel in future revision
 		
 		/********************** TEST ONLY CODE **********************/
 		//mine the DAG
@@ -145,18 +144,19 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
         $this->submit = 0;
         $this->confirm = 0;
         $this->found = 0;
-		$this->max_target = bcsub(bcpow(16,127) ,1); //63.5-byte max target/difficulty
+		$this->max_target = gmp_sub(gmp_pow(16,125) ,1); //FOR TESTING
+		//$this->max_target = gmp_sub(gmp_pow(16,127) ,1); //63.5-byte max target/difficulty
 		$this->target = $this->max_target;
 		$this->height = 0; 
 		
 		// ethash stuff
-		$this->P = bcsub(bcpow(2,512),38117);
+		$this->P = gmp_sub(gmp_pow(2,512),38117);
 		$this->size = $size;
 		$this->diff = 2**14;
 		$this->epochtime = 10080; // 10080 yields DAG updates twice per week @ 30s blocktimes, this won't be constant in the full implementation!
 		$this->accesses = 200; 
 		$this->cache_size = 2500;
-		$this->k = 32; //number of parents per node
+		$this->k = 16; //number of parents per node
 		$this->w = '4'; //NOT SURE WHAT VALUE THIS IS ACTUALLY SUPPOSED TO BE >.<
 		//$this->w = 4;
 		$this->epoch = -1; //force get_daggerset in first run of update_block;
@@ -190,12 +190,15 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
         if (floatval(phpversion()) < 7.2) {
             die("The minimum PHP version required is 7.2.");
         }
+		if (PHP_INT_SIZE < 8) {
+			die("Current implementation requires native 64-bit arithmetic. Either your PHP build is 32-bit, or your architecture is 32-bit, or both.");
+		}
     }
 	
 	public function produce_dag($seed, $length, $epoch) 
 	{
 		$epoch_str = (string)$epoch;
-		$length64 = floor($length/64);
+		$length64 = floor($length/64); //should NOT be necessary, fixing
 		//shorthash record of base, in base58
 		$base_str_short = bc_arb_encode(blake3($seed,16,'int'),'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'); 
 		$cwd = str_replace('\\', '/', getcwd());
@@ -209,7 +212,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 			echo "Blakehash: $blakehash\n";
 			$picker = bcpowmod($blakehash, $this->w, $this->P);
 			$init = $picker;
-			$o = encode_int($picker, '64');
+			$o = encode_int($init, '64');
 			$percentdone = 0;
 			echo "DAG percent generated: ". str_pad(number_format($percentdone*100,1,".",""),5,STR_PAD_LEFT) ."%";
 			for($i=1; $i<$length64; $i++) {
@@ -235,7 +238,16 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 			/* file_force_contents($cwd.'/dag_cache/DAG_E='.$epoch_str.'_L='.$length.'.php', $var); */
 			
 			file_force_contents($cwd.'/dag_cache/DAG_E='.$epoch_str.'_K='.$this->k.'_L='.$length.'_B='.$base_str_short.".txt", $dag_str);
+			
+			//double-check that dag reading matches result
+			$dag_file = file_get_contents($dag_path,false,null,1,$length*2); //convert back from hex?
+			$dag_file = hex2bin($dag_file);
+			if(bccomp($o,$dag_file) != 0) {
+				die("Newly cached DAG does not match local DAG copy!");
+			}
+			
 			//unset($var); //free memory
+			unset($dag_file);
 			unset($o_hex);
 			return $o;
 		
@@ -256,7 +268,8 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		$nonce_int = decode_int($nonce);
 		echo "Target:    $this->target\n";
 		echo "Max T:     $this->max_target\n";
-		$best_result = '';
+		$best_result = bcmul($this->max_target, 1000);
+		$t_start = $t_check1 = microtime(true);
 		while (1) 
 		{
 			$result = $this->hashimoto($daggerset, $this->get_dagsize(),$this->block, $nonce);
@@ -266,22 +279,25 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 				break;
 			}
 			$nonces_tried++;
-			if(bccomp($result,$best_result) < 0 || $nonces_tried == 1)
+			if(bccomp($result,$best_result) < 0)
 			{
 				$best_result = $result;
 			}
-			$nonce_int = bcadd($nonce_int,'1');
+			$nonce_int = gmp_add($nonce_int,1);
 			if (bccomp($nonce_int,SELF::TwoExp64) > 0) 
 			{
 				$nonce_int = 0;
 			}
 			$nonce = encode_int($nonce_int, '64');
-			
-			if(($nonces_tried % 10) == 0)
+			$t_check2 = microtime(true);
+			if($t_check2 - $t_check1 > 3) //update every 3 seconds
 			{
-				//echo "\ncurrent:   $result \n";
-				echo "  ".chr(8).chr(8).chr(8).chr(8).chr(8).chr(8).chr(8)."\r\rBest hash: $best_result, nonces tried: $nonces_tried";
+				$this->update_block();
+				$hashrate_avg = $nonces_tried/($t_check2-$t_start);
+				$t_check1 = $t_check2;
+				echo "  ".chr(8).chr(8).chr(8).chr(8).chr(8).chr(8).chr(8)."\r\rBest hash: $best_result, nonces tried: $nonces_tried, hashrate: $hashrate_avg nonce/sec";
 			}
+			
 		}
 		$nonce_58 = bc_arb_encode($nonce_int,'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz');
 		echo "\nReturned nonce: $nonce_58\n";
@@ -290,30 +306,17 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 	}
 	
 	public function hashimoto($dag, $dagsize, $header, $nonce) 
-	{ //if possible, re-implementing this to perform byte-wise operations (instead of string-encoded integer operations) would be much more efficient
-		$m = bcfloor(bcsub(bcdiv($dagsize,'2'),1));
+	{ 
+		//if possible, re-implementing this to perform byte-wise operations (instead of string-encoded integer operations) would be much more efficient
+
+		//since the original python code indexes the DAG in 64-byte chunks, but php's array structure has a ton of overhead, the DAG will be accessed in a string array, which means that the indexing is by byte (and 64 times more fine than the python indexing)
+		$m = ((int)$dagsize>>1)>>6; // floor() is implied by dagsize, which is divisible by 2. Divide by 2, Divide by 64.
 		$mix = blake3($nonce.$header,64,'int');
-		$i4 = $i4max = 0;
 		for($i=0; $i<$this->accesses; $i++) {
 			//mix ^= dag[m + (mix % 2**64) % m]
-			$dagstr = '';
-			$i2 = bcadd($m,bcmod(bcmod($mix,SELF::TwoExp64),$m));
-			$mix256 = encode_int($mix,'64');
-			for($i3=0; $i3<strlen($mix256); $i3++) //If there's a way to reference an 64-byte string in a bytewise way, that would be a *great* 
-			{
-				$i4 = bcadd($i2,(string)$i3);
-				//echo "\ni4: $i4";
-				$dagstr .= $dag[(int)$i4];
-				if(bccomp(bcadd($i2,(string)($i3+1)),$dagsize) >= 0)
-				{
-					$i2 = '0';
-				}		
-				if ($i4 > $i4max)	$i4max = $i4; //just for testing
-			}
-			$mix = gmp_xor(decode_int($mix256),decode_int($dagstr));
-			//echo "\ni4max: ".$i4max."\n";
-			//echo "dag[$i2]: \n     " . decode_int($dagstr) . "\n";
-			//echo "mix: \n     " . $mix . "\n\n";
+			$i2 = gmp_strval(gmp_mul(gmp_add($m,gmp_mod(gmp_mod($mix,SELF::TwoExp64),$m)),64));
+			$dagint = decode_int(substr($dag,$i2,64));
+			$mix = gmp_xor($mix,$dagint);
 		}
 		return dbl_blake3(encode_int($mix,64),64,'int');
 	}
@@ -455,14 +458,14 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 	}
 
 
-	public function get_prevhash($n) //$n is just block height I think
+	public function get_prevhash($n,$key = '') //$n is just block height I think
 	{
 		if ($n <= 0)
 		{	// return genesis block  // $this->publicKey."-".$block."-".$diff;
 			$base = array(
-				"block"		=> "Satoshi is a steely-eyed missile man",
-				"diff"		=> "1",
-				"pubkey"	=> $this->publicKey );
+				"block"		=> 'Satoshi is a steely-eyed missile man',
+				"diff"		=> '1',
+				"pubkey"	=> $key ); //$this->publicKey );
 		} else { //return previous block hash
 		
 			$res = file_get_contents($this->node."/api.php?q=getBlock&height=".$n);		
@@ -476,18 +479,17 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 			$base = array(
 				"block"		=> $data['id'],
 				"diff"		=> $data['difficulty'],
-				"pubkey"	=> $this->publicKey 
-				);
+				"pubkey"	=> $key ); //$this->publicKey 
 		}
 	return $base;
 	}
 
-	public function get_seedset()
+	public function get_seedset($key = '')
 	{
 		$back_num = (int)$this->height - ((int)$this->height % $this->epochtime);
 		$front_num = max($back_num - $this->epochtime, 0);
-		$back_base = $this->get_prevhash($back_num);
-		$front_base = $this->get_prevhash($front_num);
+		$back_base = $this->get_prevhash($back_num,$key);
+		$front_base = $this->get_prevhash($front_num,$key);
 		
 		$seedset = array(
 			"pubkey"		=> $back_base["pubkey"],
@@ -514,10 +516,10 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		return $this->size * SELF::MB;
 	} //I still haven't figured out why the dag is 1024 times bigger than intended lol
 
-	public function get_daggerset()
+	public function get_daggerset($key = '')
 	{
 		$dagsz = $this->get_dagsize();
-		$seedset = $this->get_seedset();
+		$seedset = $this->get_seedset($key);
 		if ($seedset["front_epoch"] <= 0)
 		{	//for first epoch
 			# No back buffer is possible, just make front buffer
