@@ -269,7 +269,7 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 		echo "Target:    $this->target\n";
 		echo "Max T:     $this->max_target\n";
 		$best_result = bcmul($this->max_target, 1000);
-		$t_start = microtime(true);
+		$t_start = $t_check1 = microtime(true);
 		while (1) 
 		{
 			$result = $this->hashimoto($daggerset, $this->get_dagsize(),$this->block, $nonce);
@@ -289,12 +289,12 @@ For Pool mining: ./eth_stuff pool <size_in_MB> <pool-address> <your-address>\n\n
 				$nonce_int = 0;
 			}
 			$nonce = encode_int($nonce_int, '64');
-			
-			if(($nonces_tried % 25) == 0)
+			$t_check2 = microtime(true);
+			if($t_check2 - $t_check1 > 3) //update every 3 seconds
 			{
-				//echo "\ncurrent:   $result \n";
-				$t_check = microtime(true);
-				$hashrate_avg = $nonces_tried/($t_check-$t_start);
+				$this->update_block();
+				$hashrate_avg = $nonces_tried/($t_check2-$t_start);
+				$t_check1 = $t_check2;
 				echo "  ".chr(8).chr(8).chr(8).chr(8).chr(8).chr(8).chr(8)."\r\rBest hash: $best_result, nonces tried: $nonces_tried, hashrate: $hashrate_avg nonce/sec";
 			}
 			
