@@ -29,6 +29,7 @@ import struct
 import os
 import pickle
 import time
+import sys
 from random import randint
 from blake3 import blake3
 
@@ -241,16 +242,25 @@ def calc_dataset(full_size, cache):
         print("loading dataset for length: ", full_size, " and short_cache: ", short_cache)
         with open(filepath, 'rb') as dag_file:
             return pickle.load(dag_file)
+    print("      no saved DAG found, generating complete DAG\n      this will take a while... ", end="")
+
     t_start = time.perf_counter()
-    print("      no saved DAG found, generating complete DAG\n      this may take a while...")
     # generate the dataset
-    dataset = [calc_dataset_item(cache, i) for i in range(full_size // HASH_BYTES)]
+    dataset = []
+    percent_done = 0
+    total_size = full_size // HASH_BYTES
+    print("percent done:       ", end="")
+    for i in range(total_size):
+        dataset.append(calc_dataset_item(cache, i))
+        if (i / total_size) > percent_done + 0.0001:
+            percent_done = i / total_size
+            print(f"\b\b\b\b\b\b{(percent_done*100):5.2f}%", end="")
 
     # save newly-generated dataset
     if ~os.path.exists(dag_dir):
         os.mkdir(dag_dir)
     with open(filepath, 'wb') as dag_file:
-        print("saving dataset for length: ", full_size, " and short_cache: ", short_cache)
+        print("\nsaving dataset for length: ", full_size, " and short_cache: ", short_cache)
         pickle.dump(dataset, dag_file)
     t_elapsed = time.perf_counter() - t_start
     print("DAG completed in [only!] ", t_elapsed, " seconds! oWo")
