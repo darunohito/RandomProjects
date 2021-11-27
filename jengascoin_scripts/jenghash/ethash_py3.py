@@ -23,8 +23,12 @@
 # See also: https://pypi.org/project/pysha3/
 #
 
-import sha3, copy, struct, binascii, codecs, struct
 from random import randint
+
+import codecs
+import copy
+import sha3
+import struct
 
 # ----- Definitions -----------------------------------------------------------
 

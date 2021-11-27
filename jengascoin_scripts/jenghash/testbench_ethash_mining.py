@@ -1,6 +1,6 @@
 #!/usr/bin/python3.9
 
-from jenghash import *
+from ethash_py3 import *
 import sys
 
 if len(sys.argv) != 4:

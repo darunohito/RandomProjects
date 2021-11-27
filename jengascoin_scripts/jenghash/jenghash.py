@@ -22,7 +22,7 @@
 # Note: the Keccak hashes are called keccak_*, not sha3_*
 # See also: https://pypi.org/project/pysha3/
 #
-
+import base64
 import codecs
 import copy
 import struct
@@ -76,7 +76,8 @@ def encode_int(s):
 
 
 def zpad(s, length):
-    return s + '\x00' * max(0, length - len(s))
+    # return s + '\x00' * max(0, length - len(s))
+    return s.ljust(length)
 
 
 def int_list_to_bytes(list):
@@ -86,7 +87,8 @@ def int_list_to_bytes(list):
 
 
 def serialize_hash(h):
-    h_serial = ''.join([zpad(encode_int(x), 4) for x in h])
+    # h_serial = ''.join([zpad(encode_int(x), 4) for x in h])
+    h_serial = ''.join([encode_int(x).ljust(4) for x in h])
     return h_serial
 
 
@@ -283,7 +285,7 @@ def hashimoto(header, nonce, full_size, dataset_lookup):
         mix.extend(s)
     # mix in random dataset nodes
     for i in range(ACCESSES):
-        p = fnv(i ^ s[0], mix[i % w]) % (n // mix_hashes) * mix_hashes
+        p = int(fnv(i ^ s[0], mix[i % w]) % (n // mix_hashes) * mix_hashes)
         newdata = []
         for j in range(mix_hashes):
             newdata.extend(dataset_lookup(p + j))
@@ -313,7 +315,9 @@ def hashimoto_full(full_size, dataset, header, nonce):
 # mining process.
 
 def get_target(difficulty):
-    return zpad(encode_int(2 ** 256 // difficulty), 64)[::-1]
+    # return encode_int(2 ** 256 - difficulty)
+    return encode_int(2 ** 256 // difficulty).ljust(64)[::-1]
+    # return zpad(encode_int(2 ** 256 // difficulty), 64)[::-1]
 
 
 def random_nonce():
@@ -321,9 +325,19 @@ def random_nonce():
 
 
 def mine(full_size, dataset, header, difficulty, nonce):
+    print("now mining...")
+    print_interval = 250  # debug only!
+    nonce_tries = 0  # debug only!
+    new_result = best_hash = get_target(2)  # debug only!
     target = get_target(difficulty)
-    while hashimoto_full(full_size, dataset, header, nonce) > target:
+    while new_result > target:
         nonce = (nonce + 1) % 2 ** 64
+        if new_result < best_hash:
+            best_hash = new_result
+        new_result = hashimoto_full(full_size, dataset, header, nonce).get("mix digest")
+        nonce_tries += 1
+        if nonce_tries % print_interval == 0:  # debug only!
+            print(f"{print_interval} more nonces tried, best hash: ", decode_int(best_hash))  # debug only!
     return nonce
 
 
