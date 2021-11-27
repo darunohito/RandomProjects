@@ -26,6 +26,9 @@
 import codecs
 import copy
 import struct
+import os
+import pickle
+import time
 from random import randint
 from blake3 import blake3
 
@@ -157,6 +160,20 @@ def get_full_size(block_number):
 
 
 def mkcache(cache_size, seed):
+    # find directory and build file name
+    short_seed = blake3(int_list_to_bytes(seed)).hexdigest(length=16)
+    cache_name = 'cache_L_' + str(cache_size) + "_C_" + short_seed + '.pkl'
+    cwd = os.path.dirname(__file__)
+    cache_dir = os.path.join(cwd, 'cache_dir')
+    filepath = os.path.join(cache_dir, cache_name)
+
+    # check for a saved cache
+    if os.path.exists(filepath):
+        print("loading cache for length: ", cache_size, " and short_seed: ", short_seed)
+        with open(filepath, 'rb') as cache_file:
+            return pickle.load(cache_file)
+
+    print("      no saved cache found, generating cache")
     n = cache_size // HASH_BYTES
 
     # Sequentially produce the initial dataset
@@ -173,6 +190,13 @@ def mkcache(cache_size, seed):
             # a list of 4-byte integers
             o_temp = int_list_to_bytes(list(map(xor, o[(i - 1 + n) % n], o[v])))
             o[i] = blake3_512(o_temp)
+
+    # save newly-generated cache
+    if ~os.path.exists(cache_dir):
+        os.mkdir(cache_dir)
+    with open(filepath, 'wb') as cache_file:
+        print("saving cache for length: ", cache_size, " and short_seed: ", short_seed)
+        pickle.dump(o, cache_file)
     return o
 
 
@@ -205,8 +229,32 @@ def calc_dataset_item(cache, i):
 
 
 def calc_dataset(full_size, cache):
-    return [calc_dataset_item(cache, i)
-            for i in range(full_size // HASH_BYTES)]
+    # find directory and build file name
+    short_cache = blake3(repr(cache).encode('utf-8')).hexdigest(length=16)
+    dag_name = 'dag_L_' + str(full_size) + "_C_" + short_cache + '.pkl'
+    cwd = os.path.dirname(__file__)
+    dag_dir = os.path.join(cwd, 'dag_dir')
+    filepath = os.path.join(dag_dir, dag_name)
+
+    # check for a saved dataset
+    if os.path.exists(filepath):
+        print("loading dataset for length: ", full_size, " and short_cache: ", short_cache)
+        with open(filepath, 'rb') as dag_file:
+            return pickle.load(dag_file)
+    t_start = time.perf_counter()
+    print("      no saved DAG found, generating complete DAG\n      this may take a while...")
+    # generate the dataset
+    dataset = [calc_dataset_item(cache, i) for i in range(full_size // HASH_BYTES)]
+
+    # save newly-generated dataset
+    if ~os.path.exists(dag_dir):
+        os.mkdir(dag_dir)
+    with open(filepath, 'wb') as dag_file:
+        print("saving dataset for length: ", full_size, " and short_cache: ", short_cache)
+        pickle.dump(dataset, dag_file)
+    t_elapsed = time.perf_counter() - t_start
+    print("DAG completed in [only!] ", t_elapsed, " seconds! oWo")
+    return dataset
 
 
 # ----- Main Loop -------------------------------------------------------------

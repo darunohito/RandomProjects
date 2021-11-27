@@ -1,7 +1,6 @@
 #!/usr/bin/python3.9
 
 from jenghash import *
-import base64
 import sys
 
 if len(sys.argv) != 4:
@@ -9,21 +8,21 @@ if len(sys.argv) != 4:
           "0xheaderhash", "0xdiff")
     sys.exit(1)
 
-block = int(sys.argv[1]) * EPOCH_LENGTH
+epoch = int(sys.argv[1])
+block = epoch * EPOCH_LENGTH
 hdr = encode_int(int(sys.argv[2], base=16))[::-1]
 hdr = '\x00' * (32 - len(hdr)) + hdr
 diff = int(sys.argv[3], base=16)
-print("mining target: ", base64.b64encode(get_target(diff)))
+print("mining target: ", decode_int(get_target(diff)))
 
-print("header: ", hdr)
 
 seed = deserialize_hash(get_seedhash(block))
-print("seed", "%064x" % decode_int(serialize_hash(seed)[::-1]), "\n   now generating cache...")
+print("seed", "%064x" % decode_int(serialize_hash(seed)[::-1]), "\n   now acquiring cache...")
 cache = mkcache(get_cache_size(block), seed)
-print("cache len: ", len(cache), "\n   now generating complete dag...")
+print("cache completed. cache len: ", len(cache), "\n   now acquiring dag...")
 dataset = calc_dataset(get_full_size(block), cache)
-print("full dag len:", len(dataset))
+print("dataset completed. full dag len:", len(dataset))
 
 
-
-mine(len(dataset), dataset, hdr, get_target(diff), random_nonce())
+nonce = mine(len(dataset), dataset, hdr, get_target(diff), random_nonce())
+print("nonce found!")

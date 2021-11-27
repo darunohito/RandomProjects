@@ -3,3 +3,4 @@ jengascoin_scripts/jenghash/__pycache__/jenghash.cpython-37.pyc
 jengascoin_scripts/jenghash/.idea/workspace.xml
 *.xml
 jengascoin_scripts/jenghash/.idea/jenghash.iml
+*.pkl
