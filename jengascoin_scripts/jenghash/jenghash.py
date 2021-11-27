@@ -316,7 +316,7 @@ def hashimoto_full(full_size, dataset, header, nonce):
 
 def get_target(difficulty):
     # return encode_int(2 ** 256 - difficulty)
-    return encode_int(2 ** 256 // difficulty).ljust(64)[::-1]
+    return encode_int(2 ** 256 // difficulty).ljust(32)[::-1]
     # return zpad(encode_int(2 ** 256 // difficulty), 64)[::-1]
 
 
