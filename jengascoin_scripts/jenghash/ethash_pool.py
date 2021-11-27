@@ -1,6 +1,6 @@
 #!/usr/bin/python2.7
 
-from ethash_ecip1043 import *
+from ethash_py3 import *
 import math, sys, os
 import readline, random, re
 import threading, json, argparse, pickle
@@ -49,25 +49,25 @@ def compute_cache(epoch, block):
 		name = id + ".cache"
 		try:
 			with open(name, "rb") as f:
-				print >>sys.stderr, "loading", name
+				print(sys.stderr, "loading", name)
 				cache = pickle.load(f)
 			return cache
 		except:
-			print >>sys.stderr, "calculating epoch", \
-			    epoch, "cache ..."
+			print(sys.stderr, "calculating epoch",
+			    epoch, "cache ...")
 			cache = mkcache(get_cache_size(block), curr_seed)
 			tmp = id + ".tmp"
-			print >>sys.stderr, "saving", tmp
+			print(sys.stderr, "saving", tmp)
 			try:
 				with open(tmp, "wb") as f:
 					pickle.dump(cache, f)
 				os.rename(tmp, name)
-				print >>sys.stderr, "saved", name
+				print(sys.stderr, "saved", name)
 			except:
 				pass
 			return cache
 	else:
-		print >>sys.stderr, "calculating epoch", epoch, "cache ..."
+		print(sys.stderr, "calculating epoch", epoch, "cache ...")
 		return mkcache(get_cache_size(block), curr_seed)
 
 

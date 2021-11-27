@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/python3.9
 
 from jenghash import *
 import sys
@@ -8,8 +8,8 @@ import sys
 #        ethash.py dag-lines 0xheaderhash 0xnonce  (mixone mode)
 #
 if len(sys.argv) != 4:
-    print >> sys.stderr, "usage: ", sys.argv[0], "epoch|dag-lines", \
-        "0xheaderhash", "0xnonce"
+    print(sys.stderr, "usage: ", sys.argv[0], "epoch|dag-lines",
+          "0xheaderhash", "0xnonce")
     sys.exit(1)
 
 # do exactly what mixone does
