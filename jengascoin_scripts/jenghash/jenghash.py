@@ -30,89 +30,10 @@ import os
 import pickle
 import time
 import sys
+import gc
+from hash_utils import *
 from random import randint
 from blake3 import blake3
-
-# ----- Definitions -----------------------------------------------------------
-
-
-WORD_BYTES = 4  # bytes in word
-DATASET_BYTES_INIT = 2 ** 30  # bytes in dataset at genesis
-DATASET_BYTES_GROWTH = 2 ** 23  # dataset growth per epoch
-CACHE_BYTES_INIT = 2 ** 24  # bytes in cache at genesis
-CACHE_BYTES_GROWTH = 2 ** 17  # cache growth per epoch
-EPOCH_LENGTH = 30000  # blocks per epoch
-MIX_BYTES = 128  # width of mix
-HASH_BYTES = 64  # hash length in bytes
-DATASET_PARENTS = 256  # number of parents of each dataset element
-CACHE_ROUNDS = 3  # number of rounds in cache production
-ACCESSES = 64  # number of accesses in hashimoto loop
-
-
-# ----- Appendix --------------------------------------------------------------
-
-def decode_int(s):
-    # s = s[::-1]
-    x = 0
-    for i in range(len(s)):
-        # x[i] = ord(s[i])
-        x += ord(s[i]) * pow(256, i)
-    return x
-    # return int(s[::-1].encode('hex'), 16) if s else 0
-
-
-def bytes_to_str(b):
-    if isinstance(b, (bytes, bytearray)):
-        b = ''.join(map(chr, b))
-    return b
-
-
-def encode_int(s):
-    a = "%x" % s
-    x = codecs.decode('0' * (len(a) % 2) + a, 'hex')[::-1]
-    x = bytes_to_str(x)
-    return '' if s == 0 else x
-    # return '' if s == 0 else ('0' * (len(a) % 2) + a).decode('hex')[::-1]
-
-
-def zpad(s, length):
-    # return s + '\x00' * max(0, length - len(s))
-    return s.ljust(length)
-
-
-def int_list_to_bytes(list):
-    b = struct.pack("{}I".format(len(list)), *list)
-    # print("bytes: ", b)
-    return b
-
-
-def serialize_hash(h):
-    # h_serial = ''.join([zpad(encode_int(x), 4) for x in h])
-    h_serial = ''.join([encode_int(x).ljust(4) for x in h])
-    return h_serial
-
-
-def deserialize_hash(h):
-    h = bytes_to_str(h)
-    # print("h to deserialize: ", h, ", type: ", type(h))
-    return [decode_int(h[i:i + WORD_BYTES])
-            for i in range(0, len(h), WORD_BYTES)]
-
-
-def str_to_bytes(s):
-    s_ints = [0] * len(s)
-    for i in range(len(s)):
-        s_ints[i] = ord(s[i])
-    return bytearray(s_ints)
-
-
-def hash_words(h, sz, x):
-    if isinstance(x, list):
-        x = serialize_hash(x)
-    if isinstance(x, str):
-        x = str_to_bytes(x)
-    y = h(x)
-    return deserialize_hash(y)
 
 
 # blake3 hash function, outputs 32 bytes unless otherwise specified
@@ -125,17 +46,6 @@ def blake3_512(x):
 def blake3_256(x):
     h = hash_words(lambda v: blake3(v).digest(), 32, x)
     return h
-
-
-def xor(a, b):
-    return a ^ b
-
-
-def isprime(x):
-    for i in range(2, int(x ** 0.5)):
-        if x % i == 0:
-            return False
-    return True
 
 
 # ----- Parameters ------------------------------------------------------------
@@ -195,22 +105,12 @@ def mkcache(cache_size, seed):
             o[i] = blake3_512(o_temp)
 
     # save newly-generated cache
-    if ~os.path.exists(cache_dir):
+    if not os.path.exists(cache_dir):
         os.mkdir(cache_dir)
     with open(filepath, 'wb') as cache_file:
         print("saving cache for length: ", cache_size, " and short_seed: ", short_seed)
         pickle.dump(o, cache_file)
     return o
-
-
-# ----- Data aggregation function ---------------------------------------------
-
-
-FNV_PRIME = 0x01000193
-
-
-def fnv(v1, v2):
-    return ((v1 * FNV_PRIME) ^ v2) % 2 ** 32
 
 
 # ----- Full dataset calculation ----------------------------------------------
@@ -316,7 +216,7 @@ def hashimoto_full(full_size, dataset, header, nonce):
 
 def get_target(difficulty):
     # return encode_int(2 ** 256 - difficulty)
-    return encode_int(2 ** 256 // difficulty).ljust(32)[::-1]
+    return encode_int(2 ** 256 // difficulty).ljust(32, '\0')[::-1]
     # return zpad(encode_int(2 ** 256 // difficulty), 64)[::-1]
 
 
@@ -325,19 +225,27 @@ def random_nonce():
 
 
 def mine(full_size, dataset, header, difficulty, nonce):
-    print("now mining...")
-    print_interval = 250  # debug only!
+    print_interval = 1000  # debug only!
     nonce_tries = 0  # debug only!
+    t_start = 0  # debug only!
+    print_len = 0  # debug only!
     new_result = best_hash = get_target(2)  # debug only!
     target = get_target(difficulty)
     while new_result > target:
         nonce = (nonce + 1) % 2 ** 64
-        if new_result < best_hash:
-            best_hash = new_result
+        if new_result < best_hash:  # debug only!
+            best_hash = new_result  # debug only!
         new_result = hashimoto_full(full_size, dataset, header, nonce).get("mix digest")
-        nonce_tries += 1
+        nonce_tries += 1  # debug only!
         if nonce_tries % print_interval == 0:  # debug only!
-            print(f"{print_interval} more nonces tried, best hash: ", decode_int(best_hash))  # debug only!
+            t_stop = time.perf_counter()
+            hashrate = print_interval / (t_stop - t_start)
+            t_start = t_stop
+            for _ in range(print_len):
+                print('\b', end = '')
+            print_str = f"hashrate: {hashrate:6.2f} H/s, best hash: {decode_int(best_hash):078d}"
+            print_len = len(print_str)
+            print(print_str, end="")  # debug only!
     return nonce
 
 

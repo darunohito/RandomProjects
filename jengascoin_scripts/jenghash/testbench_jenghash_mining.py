@@ -1,6 +1,7 @@
 #!/usr/bin/python3.9
 
 from jenghash import *
+from total_size import *
 import sys
 
 if len(sys.argv) != 4:
@@ -19,9 +20,9 @@ diff = int(sys.argv[3], base=16)
 seed = deserialize_hash(get_seedhash(block))
 print("seed", "%064x" % decode_int(serialize_hash(seed)[::-1]), "\n   now acquiring cache...")
 cache = mkcache(get_cache_size(block), seed)
-print("cache completed. ", len(cache), "\n   now acquiring dag...")
+print("cache completed. \n   now acquiring dag...")
 dataset = calc_dataset(get_full_size(block), cache)
-print("dataset completed. full dag len:", len(dataset))
+print("dataset completed. \n   now mining...")
 
 
 nonce = mine(len(dataset), dataset, hdr, diff, random_nonce())

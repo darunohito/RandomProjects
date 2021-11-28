@@ -32,6 +32,7 @@ import time
 import numpy as np
 import gc
 from random import randint
+import multiprocessing as mp
 # from blake3 import blake3
 import sha3
 
@@ -69,6 +70,47 @@ def get_full_size(block_number):
     return sz
 
 
+# ----- Cache Generation ------------------------------------------------------
+
+
+def mkcache(cache_size, seed):
+    n = cache_size // HASH_BYTES
+
+    # Sequentially produce the initial dataset
+    o = [sha3_512(seed)]
+    for i in range(1, n):
+        o.append(sha3_512(o[-1]))
+
+    # Use a low-round version of randmemohash
+    for _ in range(CACHE_ROUNDS):
+        for i in range(n):
+            v = o[i][0] % n
+            # maps list to list, with xor function
+            # sha expects bytes, mapping xor with integers returns
+            # a list of 4-byte integers
+            o_temp = int_list_to_bytes(list(map(xor, o[(i - 1 + n) % n], o[v])))
+            o[i] = sha3_512(o_temp)
+    return o
+
+
+# ----- Full dataset calculation ----------------------------------------------
+
+
+def calc_dataset_item(cache, i):
+    n = len(cache)
+    r = HASH_BYTES // WORD_BYTES
+    i = int(i)
+    # initialize the mix
+    mix = copy.copy(int(cache[i % n]))
+    mix[0] ^= int(i)
+    mix = sha3_512(mix)
+    # fnv it with a lot of random cache nodes based on i
+    for j in range(DATASET_PARENTS):
+        cache_index = fnv(i ^ j, mix[j % r])
+        mix = list(map(fnv, mix, cache[cache_index % n]))
+    return sha3_512(int_list_to_bytes(mix))
+
+
 """
 build_hash_struct()
 takes:
@@ -91,20 +133,25 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng'):
     if os.path.exists(filepath):
         print(f"loading {out_type} for length: ", out_size, " and short_name: ", short_name)
         with open(filepath, 'rb') as file:
-            return pickle.load(file)
-    print(f"      no saved {out_type} found, generating hash structure\n \
+            # return pickle.load(file)
+            return np.fromfile(filepath, dtype=np.int32)
+    print(f"  no saved {out_type} found, generating hash structure\n \
          this will take a while... ", end="")
 
     # since no saved structure exist, build from scratch
     if out_type == 'cache':
-        hash_struct = mkcache(cache_size=out_size, seed=seed)
+        # q = mp.Queue()
+        # p = mp.Process(target=mkcache, args=(out_size, seed))
+        # p.start()
+        # hash_struct = q.get()
+        hash_struct = mkcache(cache_size=out_size, seed=seed)  # convert to numpy array
     elif out_type == 'dag':
         hash_struct = calc_dataset(full_size=out_size, cache=seed)  # convert to numpy array
     else:
         raise Exception(f"out_type of 'cache' or 'dag' expected, '{out_type}' given")
 
-    # hash_struct = np.array(hash_struct)  # convert to numpy array
-    # gc.collect()  # attempt to free memory
+    hash_struct = np.array(hash_struct, 'int')  # convert to numpy array
+    gc.collect()  # attempt to free memory
 
     # save newly-generated hash structure
     if not os.path.exists(file_dir):
@@ -116,54 +163,9 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng'):
     return hash_struct
 
 
-# ----- Cache Generation ------------------------------------------------------
-
-
-def mkcache(cache_size, seed):
-
-    print("      no saved cache found, generating cache")
-    n = cache_size // HASH_BYTES
-
-    # Sequentially produce the initial dataset
-    o = [sha3_512(seed)]
-    for i in range(1, n):
-        o.append(sha3_512(o[-1]))
-
-    # Use a low-round version of randmemohash
-    for _ in range(CACHE_ROUNDS):
-        for i in range(n):
-            v = o[i][0] % n
-            # maps list to list, with xor function
-            # sha expects bytes, mapping xor with integers returns
-            # a list of 4-byte integers
-            o_temp = int_list_to_bytes(list(map(xor, o[(i - 1 + n) % n], o[v])))
-            o[i] = sha3_512(o_temp)
-
-    return o
-
-
-# ----- Full dataset calculation ----------------------------------------------
-
-
-def calc_dataset_item(cache, i):
-    n = len(cache)
-    r = HASH_BYTES // WORD_BYTES
-    i = int(i)
-    # initialize the mix
-    mix = copy.copy(cache[i % n])
-    mix[0] ^= int(i)
-    mix = sha3_512(mix)
-    # fnv it with a lot of random cache nodes based on i
-    for j in range(DATASET_PARENTS):
-        cache_index = fnv(i ^ j, mix[j % r])
-        mix = list(map(fnv, mix, cache[cache_index % n]))
-    return sha3_512(int_list_to_bytes(mix))
-
-
 def calc_dataset(full_size, cache):
-
-    t_start = time.perf_counter()
     # generate the dataset
+    t_start = time.perf_counter()
     dataset = []
     percent_done = 0
     total_size = full_size // HASH_BYTES
@@ -173,9 +175,9 @@ def calc_dataset(full_size, cache):
         if (i / total_size) > percent_done + 0.0001:
             percent_done = i / total_size
             print(f"\b\b\b\b\b\b{(percent_done * 100):5.2f}%", end="")
-
     t_elapsed = time.perf_counter() - t_start
-    print("DAG completed in [only!] ", t_elapsed, " seconds! oWo")
+    print("DAG completed in [only!] ", t_elapsed, " seconds!  oWo  so fast")
+
     return dataset
 
 
@@ -196,10 +198,11 @@ def hashimoto(header, nonce, full_size, dataset_lookup):
     # mix in random dataset nodes
     for i in range(ACCESSES):
         p = int(fnv(i ^ s[0], mix[i % w]) % (n // mix_hashes) * mix_hashes)
-        newdata = []
+        new_data = []
         for j in range(mix_hashes):
-            newdata.extend(dataset_lookup(p + j))
-        mix = list(map(fnv, mix, newdata))
+            # new_data.extend(dataset_lookup(p + j))
+            new_data.extend(dataset_lookup(p + j))
+        mix = list(map(fnv, mix, new_data))
     # compress mix
     cmix = []
     for i in range(0, len(mix), 4):

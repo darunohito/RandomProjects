@@ -35,6 +35,9 @@ hdr = '\x00' * (32 - len(hdr)) + hdr
 print("header: ", hdr)
 nonce = int(sys.argv[3], base=16)
 print("nonce: ", nonce)
+time_start = time.perf_counter()
 hash = hashimoto_light(dag_bytes, cache, hdr, nonce)
+time_elapsed = time.perf_counter() - time_start
 print("cmix", "%064x" % decode_int(hash["mix digest"][::-1]))
 print("res ", "%064x" % decode_int(hash["result"][::-1]))
+print(f"time to run hashimoto_light: {time_elapsed*1000:.2f} ms")
