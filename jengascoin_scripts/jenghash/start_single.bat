@@ -1,0 +1,2 @@
+C:\Users\darpo\AppData\Local\Programs\Python\Python37\python.exe run-jenghash-single.py 10 0x667c94657d5b6922693e2e6ac77b80861b80ff949c795ef4b18551e8c389a2f1 0x710a38013066d8ce
+pause

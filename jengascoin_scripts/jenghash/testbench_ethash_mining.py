@@ -1,6 +1,6 @@
 #!/usr/bin/python3.9
 
-from ethash_py3 import *
+from ethash_py3_np import *
 import sys
 
 if len(sys.argv) != 4:
@@ -18,9 +18,9 @@ diff = int(sys.argv[3], base=16)
 
 seed = deserialize_hash(get_seedhash(block))
 print("seed", "%064x" % decode_int(serialize_hash(seed)[::-1]), "\n   now acquiring cache...")
-cache = mkcache(get_cache_size(block), seed)
+cache = build_hash_struct(get_cache_size(block), seed, out_type='cache', coin='eth')
 print("cache completed. ", len(cache), "\n   now acquiring dag...")
-dataset = calc_dataset(get_full_size(block), cache)
+dataset = build_hash_struct(get_full_size(block), cache, out_type='dag', coin='eth')
 print("dataset completed. full dag len:", len(dataset))
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/python3.9
 
-from jenghash import *
+from jenghash_np import *
 from total_size import *
 import sys
 
@@ -19,9 +19,10 @@ diff = int(sys.argv[3], base=16)
 
 seed = deserialize_hash(get_seedhash(block))
 print("seed", "%064x" % decode_int(serialize_hash(seed)[::-1]), "\n   now acquiring cache...")
-cache = mkcache(get_cache_size(block), seed)
+# cache = mkcache(get_cache_size(block), seed)
+cache = build_hash_struct(get_cache_size(block), seed, out_type='cache', coin='jng')
 print("cache completed. \n   now acquiring dag...")
-dataset = calc_dataset(get_full_size(block), cache)
+dataset = build_hash_struct(get_full_size(block), cache, out_type='dag', coin='jng')
 print("dataset completed. \n   now mining...")
 
 

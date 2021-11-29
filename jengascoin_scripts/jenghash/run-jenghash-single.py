@@ -27,6 +27,7 @@ else:
     print("seed raw type: ", type(seed), ", seed: ", seed)
     print("seed", "%064x" % decode_int(serialize_hash(seed)[::-1]))
     cache = mkcache(get_cache_size(block), seed)
+    # cache = build_hash_struct(get_cache_size(block), seed, out_type='cache', coin='jng')
     print("cache len: ", len(cache))
     dag_bytes = get_full_size(block)
     print("dag_bytes = ", dag_bytes)

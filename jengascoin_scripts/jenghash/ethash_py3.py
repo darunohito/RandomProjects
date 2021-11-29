@@ -121,7 +121,6 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng'):
 
 def mkcache(cache_size, seed):
 
-    print("      no saved cache found, generating cache")
     n = cache_size // HASH_BYTES
 
     # Sequentially produce the initial dataset
