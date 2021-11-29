@@ -13,8 +13,8 @@ def main():
     #        ethash.py dag-lines 0xheaderhash 0xnonce  (mixone mode)
     #
     if len(sys.argv) != 4:
-        print >> sys.stderr, "usage: ", sys.argv[0], "epoch|dag-lines", \
-            "0xheaderhash", "0xnonce"
+        print(sys.stderr, "usage: ", sys.argv[0], "epoch|dag-lines",
+              "0xheaderhash", "0xnonce")
         sys.exit(1)
 
     # do exactly what mixone does
@@ -45,7 +45,8 @@ def main():
     time_elapsed = time.perf_counter() - time_start
     print("cmix", "%064x" % decode_int(hash["mix digest"][::-1]))
     print("res ", "%064x" % decode_int(hash["result"][::-1]))
-    print(f"time to run hashimoto_light: {time_elapsed*1000:.2f} ms")
+    print(f"time to run hashimoto_light: {time_elapsed * 1000:.2f} ms")
+
 
 if __name__ == '__main__':
     main()

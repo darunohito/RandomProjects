@@ -144,13 +144,13 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng'):
         # p = mp.Process(target=mkcache, args=(out_size, seed))
         # p.start()
         # hash_struct = q.get()
-        hash_struct = mkcache(cache_size=out_size, seed=seed)  # convert to numpy array
+        hash_struct = mkcache(cache_size=out_size, seed=seed)
     elif out_type == 'dag':
-        hash_struct = calc_dataset(full_size=out_size, cache=seed)  # convert to numpy array
+        hash_struct = calc_dataset(full_size=out_size, cache=seed)
     else:
         raise Exception(f"out_type of 'cache' or 'dag' expected, '{out_type}' given")
 
-    hash_struct = np.array(hash_struct, 'int')  # convert to numpy array
+    hash_struct = np.array(hash_struct, 'uint32')  # convert to numpy array
     gc.collect()  # attempt to free memory
 
     # save newly-generated hash structure
