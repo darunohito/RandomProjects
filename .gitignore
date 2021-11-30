@@ -4,3 +4,4 @@ jengascoin_scripts/jenghash/.idea/workspace.xml
 *.xml
 jengascoin_scripts/jenghash/.idea/jenghash.iml
 *.pkl
+*.npy
