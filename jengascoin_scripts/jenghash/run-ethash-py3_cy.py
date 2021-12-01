@@ -1,9 +1,7 @@
 #!/usr/bin/python3.7
-import time
 
 from ethash_py3_np import *
 import sys
-import torch
 
 
 def main():
