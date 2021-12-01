@@ -40,28 +40,26 @@ import struct
 
 np.import_array()
 
-ctypedef np.uint32_t UINT32
-
 # ----- Definitions -- DO NOT CHANGE (or record backup before changing >.> ) --
 
 
-cdef int WORD_BYTES = 4  # bytes in word
-cdef np.uint64_t DATASET_BYTES_INIT = 2 ** 30  # bytes in dataset at genesis
-cdef np.uint64_t DATASET_BYTES_GROWTH = 2 ** 23  # dataset growth per epoch
-cdef np.uint64_t CACHE_BYTES_INIT = 2 ** 24  # bytes in cache at genesis
-cdef np.uint32_t CACHE_BYTES_GROWTH = 2 ** 17  # cache growth per epoch
-cdef np.uint32_t EPOCH_LENGTH = 30000  # blocks per epoch
-cdef int MIX_BYTES = 128  # width of mix
-cdef int HASH_BYTES = 64  # hash length in bytes
-cdef int DATASET_PARENTS = 256  # number of parents of each dataset element
-cdef int CACHE_ROUNDS = 3  # number of rounds in cache production
-cdef int ACCESSES = 64  # number of accesses in hashimoto loop
+cdef unsigned int WORD_BYTES = 4  # bytes in word
+cdef unsigned long long DATASET_BYTES_INIT = 2 ** 30  # bytes in dataset at genesis
+cdef unsigned long long DATASET_BYTES_GROWTH = 2 ** 23  # dataset growth per epoch
+cdef unsigned long long CACHE_BYTES_INIT = 2 ** 24  # bytes in cache at genesis
+cdef unsigned long CACHE_BYTES_GROWTH = 2 ** 17  # cache growth per epoch
+cdef unsigned long EPOCH_LENGTH = 30000  # blocks per epoch
+cdef unsigned int MIX_BYTES = 128  # width of mix
+cdef unsigned int HASH_BYTES = 64  # hash length in bytes
+cdef unsigned int DATASET_PARENTS = 256  # number of parents of each dataset element
+cdef unsigned int CACHE_ROUNDS = 3  # number of rounds in cache production
+cdef unsigned int ACCESSES = 64  # number of accesses in hashimoto loop
 
 
 # ----- Appendix --------------------------------------------------------------
 
 
-# change to cython/numpy array operation
+# change to cython/numpy array operation?
 def decode_int(s):
     x = 0
     for i in range(len(s)):
@@ -69,7 +67,7 @@ def decode_int(s):
     return x
 
 
-# change to cython/numpy array operation
+# change to cython/numpy array operation?
 def bytes_to_str(b):
     if isinstance(b, (bytes, bytearray)):
         return ''.join(map(chr, b))
@@ -78,7 +76,7 @@ def bytes_to_str(b):
     raise TypeError("Wanted bytes|bytearray, got ", type(b))
 
 
-# change to cython/numpy array operation
+# change to cython/numpy array operation?
 def encode_int(s):
     a = "%x" % s
     x = codecs.decode('0' * (len(a) % 2) + a, 'hex')[::-1]
@@ -139,9 +137,8 @@ def isprime(x):
 FNV_PRIME = 0x01000193
 
 
-def fnv(v1, v2):
+cpdef np.uint32_t fnv(np.uint64_t v1, np.uint64_t v2):
     return ((v1 * FNV_PRIME) ^ v2) % 2 ** 32
-
 
 
 # sha3 hash function, outputs 64 bytes
@@ -204,8 +201,7 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='eth'):
         print(f"loading {out_type} for length: ", out_size, " and short_name: ", short_name)
         with open(filepath, 'rb') as file:
             return np.load(filepath)
-    print(f"  no saved {out_type} found, generating hash structure\n \
-         this will take a while... ", end="")
+    print(f"  no saved {out_type} found, generating hash structure\n    this will take a while... ", end="")
 
     # since no saved structure exist, build from scratch
     if out_type == 'cache':
@@ -218,8 +214,6 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='eth'):
         hash_struct = calc_dataset(full_size=out_size, cache=seed)
     else:
         raise Exception(f"out_type of 'cache' or 'dag' expected, '{out_type}' given")
-    # hash_struct = np.array(hash_struct, 'uint32')  # convert to numpy array
-    # gc.collect()  # attempt to free memory
 
     # save newly-generated hash structure
     if not os.path.exists(file_dir):
@@ -234,10 +228,11 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='eth'):
 # ----- Cache Generation ------------------------------------------------------
 
 
-def mkcache(cache_size, seed):
-    n = cache_size // HASH_BYTES
-
+cpdef np.ndarray mkcache(cache_size, seed):
+    cdef np.uint32_t n = cache_size // HASH_BYTES
+    t_start = time.perf_counter()
     # Sequentially produce the initial dataset
+    # o_temp = np.empty([1, HASH_BYTES // WORD_BYTES], np.uint32)
     o = np.empty([n, HASH_BYTES // WORD_BYTES], np.uint32)
     o[0] = sha3_512(seed)
     for i in range(1, n):
@@ -249,20 +244,23 @@ def mkcache(cache_size, seed):
             # maps list to list, with xor function
             # sha expects bytes, mapping xor with integers returns
             # a list of 4-byte integers
-            o_temp = int_list_to_bytes(list(map(xor, o[(i - 1 + n) % n], o[v])))
-            o[i] = sha3_512(o_temp)
+            # o_temp = int_list_to_bytes(np.bitwise_xor(o[(i - 1 + n) % n], o[v]))
+            # o_temp = int_list_to_bytes(list(map(xor, o[(i - 1 + n) % n], o[v])))
+            o[i] = sha3_512(int_list_to_bytes(np.bitwise_xor(o[(i - 1 + n) % n], o[v])))
+    t_elapsed = time.perf_counter() - t_start
+    print("cache completed in [only!] ", t_elapsed, " seconds!  oWo  so fast")
     return o
 
 
 # ----- Full dataset calculation ----------------------------------------------
 
 
-def calc_dataset_item(cache, i):
-    n = len(cache)
-    r = HASH_BYTES // WORD_BYTES
-    i = int(i)
+def calc_dataset_item(np.ndarray[np.uint32_t, ndim=2] cache, np.uint64_t i):
+    cdef np.uint32_t n = len(cache)
+    cdef np.uint8_t r = HASH_BYTES // WORD_BYTES
     # initialize the mix
-    mix = copy.copy(cache[i % n])
+    # mix = copy.copy(cache[i % n])
+    mix = np.ndarray.copy(cache[i % n])
     mix[0] ^= i
     mix = sha3_512(mix)
     # fnv it with a lot of random cache nodes based on i
@@ -272,40 +270,46 @@ def calc_dataset_item(cache, i):
     return sha3_512(int_list_to_bytes(mix))
 
 
-def calc_dataset(full_size, cache):
+cpdef np.ndarray calc_dataset(np.uint64_t full_size, np.ndarray[np.uint32_t, ndim=2] cache):
     # generate the dataset
-    t_start = time.perf_counter()
-    # dataset = []
-    percent_done = 0
+    cdef float t_start = time.perf_counter()
+    cdef float t_elapsed = 0
+    cdef float percent_done = 0
+    print("percent done:       ", end="")
     total_size = full_size // HASH_BYTES
     dataset = np.empty([total_size, HASH_BYTES // WORD_BYTES], np.uint32)
-    print("percent done:       ", end="")
     for i in range(total_size):
-        # dataset.append(calc_dataset_item(cache, i))
         dataset[i] = calc_dataset_item(cache, i)
         if (i / total_size) > percent_done + 0.0001:
             percent_done = i / total_size
-            print(f"\b\b\b\b\b\b{(percent_done * 100):5.2f}%", end="")
-    t_elapsed = time.perf_counter() - t_start
+            t_elapsed = time.perf_counter() - t_start
+            print(f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, ETA: {(t_elapsed / percent_done / 60):7.0f}m", end="")
     print("DAG completed in [only!] ", t_elapsed, " seconds!  oWo  so fast")
 
     return dataset
 
 
 # ----- Main Loop -------------------------------------------------------------
+##
+## FNV_PRIME = 0x01000193
+##
+##
+## def np.uint32_t fnv(np.uint64_t v1, np.uint64_t v2):
+##     return ((v1 * FNV_PRIME) ^ v2) % 2 ** 32 
+##
 
-
-def hashimoto(header, nonce, full_size, dataset_lookup):
-    n = full_size / HASH_BYTES
-    w = MIX_BYTES // WORD_BYTES
-    mix_hashes = MIX_BYTES // HASH_BYTES
+def hashimoto(header, np.uint64_t nonce, np.uint64_t full_size, dataset_lookup):
+    cdef unsigned long long n = full_size // HASH_BYTES
+    cdef unsigned int w = MIX_BYTES // WORD_BYTES
+    cdef unsigned int mix_hashes = MIX_BYTES // HASH_BYTES
     # combine header+nonce into a 64 byte seed
     base = str_to_bytes(header) + struct.pack("<Q", nonce)
     s = sha3_512(base)
     # start the mix with replicated s
-    mix = []
-    for _ in range(mix_hashes):
-        mix.extend(s)
+    mix = np.tile(s, mix_hashes)
+    # mix = []
+    # for _ in range(mix_hashes):
+    #     mix.extend(s)
     # mix in random dataset nodes
     for i in range(ACCESSES):
         p = int(fnv(i ^ s[0], mix[i % w]) % (n // mix_hashes) * mix_hashes)
@@ -324,12 +328,12 @@ def hashimoto(header, nonce, full_size, dataset_lookup):
     }
 
 
-def hashimoto_light(full_size, cache, header, nonce):
+def hashimoto_light(np.uint64_t full_size, cache, header, np.uint64_t nonce):
     return hashimoto(header, nonce, full_size,
                      lambda x: calc_dataset_item(cache, x))
 
 
-def hashimoto_full(full_size, dataset, header, nonce):
+def hashimoto_full(np.uint64_t full_size, dataset, header, np.uint64_t nonce):
     return hashimoto(header, nonce, full_size, lambda x: dataset[x])
 
 
