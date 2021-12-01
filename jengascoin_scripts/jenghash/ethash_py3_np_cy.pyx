@@ -302,6 +302,7 @@ def hashimoto(header, np.uint64_t nonce, np.uint64_t full_size, dataset_lookup):
     cdef unsigned long long n = full_size // HASH_BYTES
     cdef unsigned int w = MIX_BYTES // WORD_BYTES
     cdef unsigned int mix_hashes = MIX_BYTES // HASH_BYTES
+    cdef unsigned int mix_bytes = HASH_BYTES // WORD_BYTES
     # combine header+nonce into a 64 byte seed
     base = str_to_bytes(header) + struct.pack("<Q", nonce)
     s = sha3_512(base)
@@ -313,10 +314,10 @@ def hashimoto(header, np.uint64_t nonce, np.uint64_t full_size, dataset_lookup):
     # mix in random dataset nodes
     for i in range(ACCESSES):
         p = int(fnv(i ^ s[0], mix[i % w]) % (n // mix_hashes) * mix_hashes)
-        new_data = []
+        new_data = np.empty([HASH_BYTES // WORD_BYTES * mix_hashes], np.uint32)
         for j in range(mix_hashes):
             # new_data.extend(dataset_lookup(p + j))
-            new_data.extend(dataset_lookup(p + j))
+            new_data = np.insert(new_data, j*mix_bytes,dataset_lookup(p + j))
         mix = list(map(fnv, mix, new_data))
     # compress mix
     cmix = []

@@ -209,10 +209,11 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng'):
 # ----- Cache Generation ------------------------------------------------------
 
 
-def mkcache(cache_size, seed):
-    n = cache_size // HASH_BYTES
-
+cpdef np.ndarray mkcache(cache_size, seed):
+    cdef np.uint32_t n = cache_size // HASH_BYTES
+    t_start = time.perf_counter()
     # Sequentially produce the initial dataset
+    # o_temp = np.empty([1, HASH_BYTES // WORD_BYTES], np.uint32)
     o = np.empty([n, HASH_BYTES // WORD_BYTES], np.uint32)
     o[0] = blake3_512(seed)
     for i in range(1, n):
@@ -222,22 +223,25 @@ def mkcache(cache_size, seed):
         for i in range(n):
             v = o[i][0] % n
             # maps list to list, with xor function
-            # sha expects bytes, mapping xor with integers returns
+            # blake3 expects bytes, mapping xor with integers returns
             # a list of 4-byte integers
-            o_temp = int_list_to_bytes(list(map(xor, o[(i - 1 + n) % n], o[v])))
-            o[i] = blake3_512(o_temp)
+            # o_temp = int_list_to_bytes(np.bitwise_xor(o[(i - 1 + n) % n], o[v]))
+            # o_temp = int_list_to_bytes(list(map(xor, o[(i - 1 + n) % n], o[v])))
+            o[i] = blake3_512(int_list_to_bytes(np.bitwise_xor(o[(i - 1 + n) % n], o[v])))
+    t_elapsed = time.perf_counter() - t_start
+    print("cache completed in [only!] ", t_elapsed, " seconds!  oWo  so fast")
     return o
 
 
 # ----- Full dataset calculation ----------------------------------------------
 
 
-def calc_dataset_item(cache, i):
-    n = len(cache)
-    r = HASH_BYTES // WORD_BYTES
-    i = int(i)
+def calc_dataset_item(np.ndarray[np.uint32_t, ndim=2] cache, np.uint64_t i):
+    cdef np.uint32_t n = len(cache)
+    cdef np.uint8_t r = HASH_BYTES // WORD_BYTES
     # initialize the mix
-    mix = copy.copy(cache[i % n])
+    # mix = copy.copy(cache[i % n])
+    mix = np.ndarray.copy(cache[i % n])
     mix[0] ^= i
     mix = blake3_512(int_list_to_bytes(mix))
     # fnv it with a lot of random cache nodes based on i
@@ -247,21 +251,20 @@ def calc_dataset_item(cache, i):
     return blake3_512(int_list_to_bytes(mix))
 
 
-def calc_dataset(full_size, cache):
+cpdef np.ndarray calc_dataset(np.uint64_t full_size, np.ndarray[np.uint32_t, ndim=2] cache):
     # generate the dataset
-    t_start = time.perf_counter()
-    # dataset = []
-    percent_done = 0
+    cdef float t_start = time.perf_counter()
+    cdef float t_elapsed = 0
+    cdef float percent_done = 0
+    print("percent done:       ", end="")
     total_size = full_size // HASH_BYTES
     dataset = np.empty([total_size, HASH_BYTES // WORD_BYTES], np.uint32)
-    print("percent done:       ", end="")
     for i in range(total_size):
-        # dataset.append(calc_dataset_item(cache, i))
         dataset[i] = calc_dataset_item(cache, i)
         if (i / total_size) > percent_done + 0.0001:
             percent_done = i / total_size
-            print(f"\b\b\b\b\b\b{(percent_done * 100):5.2f}%", end="")
-    t_elapsed = time.perf_counter() - t_start
+            t_elapsed = time.perf_counter() - t_start
+            print(f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, ETA: {(t_elapsed / percent_done / 60):7.0f}m", end="")
     print("DAG completed in [only!] ", t_elapsed, " seconds!  oWo  so fast")
 
     return dataset
@@ -270,24 +273,27 @@ def calc_dataset(full_size, cache):
 # ----- Main Loop -------------------------------------------------------------
 
 
-def hashimoto(header, nonce, full_size, dataset_lookup):
-    n = full_size / HASH_BYTES
-    w = MIX_BYTES // WORD_BYTES
-    mix_hashes = MIX_BYTES // HASH_BYTES
+def hashimoto(header, np.uint64_t nonce, np.uint64_t full_size, dataset_lookup):
+    cdef unsigned long long n = full_size // HASH_BYTES
+    cdef unsigned int w = MIX_BYTES // WORD_BYTES
+    cdef unsigned int mix_hashes = MIX_BYTES // HASH_BYTES
+    cdef unsigned int mix_bytes = HASH_BYTES // WORD_BYTES
     # combine header+nonce into a 64 byte seed
     base = str_to_bytes(header) + struct.pack("<Q", nonce)
     s = blake3_512(base)
     # start the mix with replicated s
-    mix = []
-    for _ in range(mix_hashes):
-        mix.extend(s)
+    mix = np.tile(s, mix_hashes)
+    # mix = []
+    # for _ in range(mix_hashes):
+    #     mix.extend(s)
     # mix in random dataset nodes
     for i in range(ACCESSES):
         p = int(fnv(i ^ s[0], mix[i % w]) % (n // mix_hashes) * mix_hashes)
-        newdata = []
+        new_data = np.empty([HASH_BYTES // WORD_BYTES * mix_hashes], np.uint32)
         for j in range(mix_hashes):
-            newdata.extend(dataset_lookup(p + j))
-        mix = list(map(fnv, mix, newdata))
+            # new_data.extend(dataset_lookup(p + j))
+            new_data = np.insert(new_data, j*mix_bytes,dataset_lookup(p + j))
+        mix = list(map(fnv, mix, new_data))
     # compress mix
     cmix = []
     for i in range(0, len(mix), 4):
@@ -298,12 +304,12 @@ def hashimoto(header, nonce, full_size, dataset_lookup):
     }
 
 
-def hashimoto_light(full_size, cache, header, nonce):
+def hashimoto_light(np.uint64_t full_size, cache, header, np.uint64_t nonce):
     return hashimoto(header, nonce, full_size,
                      lambda x: calc_dataset_item(cache, x))
 
 
-def hashimoto_full(full_size, dataset, header, nonce):
+def hashimoto_full(np.uint64_t full_size, dataset, header, np.uint64_t nonce):
     return hashimoto(header, nonce, full_size, lambda x: dataset[x])
 
 
