@@ -43,5 +43,10 @@ dataset = jng.build_hash_struct(jng.get_full_size(block), cache, out_type='dag',
 print("dataset completed. \n   now mining...")
 
 
-nonce = jng.mine(len(dataset), dataset, hdr, diff, jng.random_nonce())
+nonce = jng.mine(jng.get_full_size(block), dataset, hdr, diff, jng.random_nonce())
 print("nonce found!")
+result = jng.hashimoto_light(jng.get_full_size(block), cache, hdr, nonce).get("mix digest")
+if result <= jng.get_target(diff):
+    print("verification passed!")
+else:
+    print("verification failed!")

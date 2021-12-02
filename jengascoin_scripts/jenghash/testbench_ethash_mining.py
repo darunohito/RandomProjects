@@ -26,3 +26,8 @@ print("dataset completed. full dag len:", len(dataset))
 
 nonce = mine(len(dataset), dataset, hdr, diff, random_nonce())
 print("nonce found!")
+result = hashimoto_light(get_full_size(block), cache, hdr, nonce).get("mix digest")
+if result <= get_target(diff):
+    print("verification passed!")
+else:
+    print("verification failed!")

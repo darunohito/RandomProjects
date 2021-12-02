@@ -13,24 +13,23 @@ import multiprocessing as mp
 from blake3 import blake3
 import codecs
 import struct
+from jh_definitions import *
 
 
 np.import_array()
 
-# ----- Definitions -- DO NOT CHANGE (or record backup before changing >.> ) --
 
-
-cdef unsigned int WORD_BYTES = 4  # bytes in word
-cdef unsigned long long DATASET_BYTES_INIT = 2 ** 30  # bytes in dataset at genesis
-cdef unsigned long long DATASET_BYTES_GROWTH = 2 ** 23  # dataset growth per epoch
-cdef unsigned long long CACHE_BYTES_INIT = 2 ** 24  # bytes in cache at genesis
-cdef unsigned long CACHE_BYTES_GROWTH = 2 ** 17  # cache growth per epoch
-cdef unsigned long EPOCH_LENGTH = 30000  # blocks per epoch
-cdef unsigned int MIX_BYTES = 128  # width of mix
-cdef unsigned int HASH_BYTES = 64  # hash length in bytes
-cdef unsigned int DATASET_PARENTS = 256  # number of parents of each dataset element
-cdef unsigned int CACHE_ROUNDS = 3  # number of rounds in cache production
-cdef unsigned int ACCESSES = 64  # number of accesses in hashimoto loop
+cdef unsigned int       C_WORD_BYTES = WORD_BYTES # bytes in word
+cdef unsigned long long C_DATASET_BYTES_INIT = DATASET_BYTES_INIT # bytes in dataset at genesis
+cdef unsigned long long C_DATASET_BYTES_GROWTH = DATASET_BYTES_GROWTH  # dataset growth per epoch
+cdef unsigned long long C_CACHE_BYTES_INIT = CACHE_BYTES_INIT  # bytes in cache at genesis
+cdef unsigned long      C_CACHE_BYTES_GROWTH = CACHE_BYTES_GROWTH  # cache growth per epoch
+cdef unsigned long      C_EPOCH_LENGTH = EPOCH_LENGTH   # blocks per epoch
+cdef unsigned long long int       C_MIX_BYTES = MIX_BYTES   # width of mix
+cdef unsigned int       C_HASH_BYTES = HASH_BYTES   # hash length in bytes
+cdef unsigned int       C_DATASET_PARENTS = DATASET_PARENTS   # number of parents of each dataset element
+cdef unsigned int       C_CACHE_ROUNDS = CACHE_ROUNDS   # number of rounds in cache production
+cdef unsigned int       C_ACCESSES = ACCESSES   # number of accesses in hashimoto loop
 
 
 # ----- Appendix --------------------------------------------------------------
@@ -77,8 +76,8 @@ def serialize_hash(h):
 def deserialize_hash(h):
     h = bytes_to_str(h)
     # print("h to deserialize: ", h, ", type: ", type(h))
-    return [decode_int(h[i:i + WORD_BYTES])
-            for i in range(0, len(h), WORD_BYTES)]
+    return [decode_int(h[i:i + C_WORD_BYTES])
+            for i in range(0, len(h), C_WORD_BYTES)]
 
 # change to cython/numpy array operation
 def str_to_bytes(s):
@@ -133,20 +132,20 @@ def blake3_256(x):
 
 
 def get_cache_size(block_number):
-    sz = CACHE_BYTES_INIT + \
-         CACHE_BYTES_GROWTH * (block_number // EPOCH_LENGTH)
-    sz -= HASH_BYTES
-    while not isprime(sz / HASH_BYTES):
-        sz -= 2 * HASH_BYTES
+    sz = C_CACHE_BYTES_INIT + \
+         C_CACHE_BYTES_GROWTH * (block_number // C_EPOCH_LENGTH)
+    sz -= C_HASH_BYTES
+    while not isprime(sz / C_HASH_BYTES):
+        sz -= 2 * C_HASH_BYTES
     return sz
 
 
 def get_full_size(block_number):
-    sz = DATASET_BYTES_INIT + \
-         DATASET_BYTES_GROWTH * (block_number // EPOCH_LENGTH)
-    sz -= MIX_BYTES
-    while not isprime(sz / MIX_BYTES):
-        sz -= 2 * MIX_BYTES
+    sz = C_DATASET_BYTES_INIT + \
+         C_DATASET_BYTES_GROWTH * (block_number // C_EPOCH_LENGTH)
+    sz -= C_MIX_BYTES
+    while not isprime(sz / C_MIX_BYTES):
+        sz -= 2 * C_MIX_BYTES
     return sz
 
 
@@ -179,8 +178,7 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng'):
         print(f"loading {out_type} for length: ", out_size, " and short_name: ", short_name)
         with open(filepath, 'rb') as file:
             return np.load(filepath)
-    print(f"  no saved {out_type} found, generating hash structure\n \
-         this will take a while... ", end="")
+    print(f"  no saved {out_type} found, generating hash structure\n     this will take a while... ", end="")
 
     # since no saved structure exist, build from scratch
     if out_type == 'cache':
@@ -210,16 +208,16 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng'):
 
 
 cpdef np.ndarray mkcache(cache_size, seed):
-    cdef np.uint32_t n = cache_size // HASH_BYTES
+    cdef np.uint32_t n = cache_size // C_HASH_BYTES
     t_start = time.perf_counter()
     # Sequentially produce the initial dataset
-    # o_temp = np.empty([1, HASH_BYTES // WORD_BYTES], np.uint32)
-    o = np.empty([n, HASH_BYTES // WORD_BYTES], np.uint32)
+    # o_temp = np.empty([1, C_HASH_BYTES // C_WORD_BYTES], np.uint32)
+    o = np.empty([n, C_HASH_BYTES // C_WORD_BYTES], np.uint32)
     o[0] = blake3_512(seed)
     for i in range(1, n):
         o[i] = blake3_512(int_list_to_bytes(o[i-1]))
     # Use a low-round version of randmemohash
-    for _ in range(CACHE_ROUNDS):
+    for _ in range(C_CACHE_ROUNDS):
         for i in range(n):
             v = o[i][0] % n
             # maps list to list, with xor function
@@ -238,14 +236,14 @@ cpdef np.ndarray mkcache(cache_size, seed):
 
 def calc_dataset_item(np.ndarray[np.uint32_t, ndim=2] cache, np.uint64_t i):
     cdef np.uint32_t n = len(cache)
-    cdef np.uint8_t r = HASH_BYTES // WORD_BYTES
+    cdef np.uint8_t r = C_HASH_BYTES // C_WORD_BYTES
     # initialize the mix
     # mix = copy.copy(cache[i % n])
     mix = np.ndarray.copy(cache[i % n])
     mix[0] ^= i
     mix = blake3_512(int_list_to_bytes(mix))
     # fnv it with a lot of random cache nodes based on i
-    for j in range(DATASET_PARENTS):
+    for j in range(C_DATASET_PARENTS):
         cache_index = fnv(i ^ j, mix[j % r])
         mix = list(map(fnv, mix, cache[cache_index % n]))
     return blake3_512(int_list_to_bytes(mix))
@@ -257,8 +255,8 @@ cpdef np.ndarray calc_dataset(np.uint64_t full_size, np.ndarray[np.uint32_t, ndi
     cdef float t_elapsed = 0
     cdef float percent_done = 0
     print("percent done:       ", end="")
-    total_size = full_size // HASH_BYTES
-    dataset = np.empty([total_size, HASH_BYTES // WORD_BYTES], np.uint32)
+    total_size = full_size // C_HASH_BYTES
+    dataset = np.empty([total_size, C_HASH_BYTES // C_WORD_BYTES], np.uint32)
     for i in range(total_size):
         dataset[i] = calc_dataset_item(cache, i)
         if (i / total_size) > percent_done + 0.0001:
@@ -274,22 +272,21 @@ cpdef np.ndarray calc_dataset(np.uint64_t full_size, np.ndarray[np.uint32_t, ndi
 
 
 def hashimoto(header, np.uint64_t nonce, np.uint64_t full_size, dataset_lookup):
-    cdef unsigned long long n = full_size // HASH_BYTES
-    cdef unsigned int w = MIX_BYTES // WORD_BYTES
-    cdef unsigned int mix_hashes = MIX_BYTES // HASH_BYTES
+    cdef unsigned long long n = full_size // C_HASH_BYTES
+    cdef unsigned long int w = C_MIX_BYTES // C_WORD_BYTES
+    cdef unsigned int mix_hashes = C_MIX_BYTES // C_HASH_BYTES
     cdef unsigned int mix_bytes = HASH_BYTES // WORD_BYTES
     # combine header+nonce into a 64 byte seed
     base = str_to_bytes(header) + struct.pack("<Q", nonce)
     s = blake3_512(base)
     # start the mix with replicated s
     mix = np.tile(s, mix_hashes)
-    # mix = []
-    # for _ in range(mix_hashes):
-    #     mix.extend(s)
+
     # mix in random dataset nodes
-    for i in range(ACCESSES):
+    for i in range(C_ACCESSES):
         p = int(fnv(i ^ s[0], mix[i % w]) % (n // mix_hashes) * mix_hashes)
-        new_data = np.empty([HASH_BYTES // WORD_BYTES * mix_hashes], np.uint32)
+        new_data = np.empty([C_HASH_BYTES // C_WORD_BYTES * mix_hashes], np.uint32)
+        # new_data = np.empty([C_MIX_BYTES * mix_hashes], np.uint32)
         for j in range(mix_hashes):
             # new_data.extend(dataset_lookup(p + j))
             new_data = np.insert(new_data, j*mix_bytes, dataset_lookup(p + j))
@@ -320,6 +317,7 @@ def hashimoto_full(np.uint64_t full_size, dataset, header, np.uint64_t nonce):
 
 def get_target(difficulty):
     # return encode_int(2 ** 256 - difficulty)
+    # byte strings are little-endian
     return encode_int(2 ** 256 // difficulty).ljust(32, '\0')[::-1]
     # return zpad(encode_int(2 ** 256 // difficulty), 64)[::-1]
 
@@ -329,27 +327,12 @@ def random_nonce():
 
 
 def mine(full_size, dataset, header, difficulty, nonce):
-    print_interval = 1000  # debug only!
-    nonce_tries = 0  # debug only!
-    t_start = 0  # debug only!
-    print_len = 0  # debug only!
-    new_result = best_hash = get_target(2)  # debug only!
     target = get_target(difficulty)
-    while new_result > target:
+    # while new_result > target:
+    # while decode_int(new_result) * difficulty > 2**256:
+    while hashimoto_full(full_size, dataset, header, nonce).get("mix digest") > target:
         nonce = (nonce + 1) % 2 ** 64
-        if new_result < best_hash:  # debug only!
-            best_hash = new_result  # debug only!
-        new_result = hashimoto_full(full_size, dataset, header, nonce).get("mix digest")
-        nonce_tries += 1  # debug only!
-        if nonce_tries % print_interval == 0:  # debug only!
-            t_stop = time.perf_counter()
-            hashrate = print_interval / (t_stop - t_start)
-            t_start = t_stop
-            for _ in range(print_len):
-                print('\b', end = '')
-            print_str = f"hashrate: {hashrate:6.2f} H/s, best hash: {decode_int(best_hash):078d}"
-            print_len = len(print_str)
-            print(print_str, end="")  # debug only!
+        # new_result = hashimoto_full(full_size, dataset, header, nonce).get("mix digest")
     return nonce
 
 
@@ -358,6 +341,6 @@ def mine(full_size, dataset, header, difficulty, nonce):
 
 def get_seedhash(block):
     s = '\x00' * 32
-    for i in range(block // EPOCH_LENGTH):
+    for i in range(block // C_EPOCH_LENGTH):
         s = serialize_hash(blake3_256(s))
     return s
