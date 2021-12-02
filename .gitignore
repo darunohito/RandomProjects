@@ -5,3 +5,15 @@ jengascoin_scripts/jenghash/.idea/workspace.xml
 jengascoin_scripts/jenghash/.idea/jenghash.iml
 *.pkl
 *.npy
+jengascoin_scripts/jenghash/jenghash_np_cy.c
+jengascoin_scripts/jenghash/jenghash_np_cy.cp37-win_amd64.pyd
+jengascoin_scripts/jenghash/ethash_py3_np_cy.cp37-win_amd64.pyd
+jengascoin_scripts/jenghash/ethash_py3_np_cy.c
+jengascoin_scripts/jenghash/jenghash_pkg_0.0/build/lib.win-amd64-3.7/jh.cp37-win_amd64.pyd
+*.pyc
+*.pyd
+*.pyd
+*.exp
+*.lib
+*.obj
+*.c
