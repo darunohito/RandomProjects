@@ -8,9 +8,8 @@ if %INPUT% EQU 2 goto clean
 :build
 	python3 .\build_utils\setup.py build_ext --inplace 
 	echo operation complete
-	timeout /t 3 /nobreak
+	timeout /t 6 /nobreak
 	exit
 :clean
 	python3 .\build_utils\clean_build.py
-	echo operation complete
-	timeout /t 3 /nobreak
+	timeout /t 6 /nobreak
