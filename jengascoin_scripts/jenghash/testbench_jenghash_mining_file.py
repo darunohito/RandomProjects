@@ -23,9 +23,10 @@ seed = deserialize_hash(get_seedhash(block))
 print("seed", "%064x" % decode_int(serialize_hash(seed)[::-1]), "\n   now acquiring cache...")
 cache = build_hash_struct(get_cache_size(block), seed, out_type='cache', coin='jng')
 print("cache completed. \n   now acquiring dag...")
-dataset = shared_memory.SharedMemory(build_hash_struct(get_full_size(block), cache, out_type='dag', coin='jng'))
 
-shm = shared_memory.SharedMemory(create=True, size=a.nbytes)
+dataset = build_hash_struct(get_full_size(block), cache, out_type='dag', coin='jng')
+dataset_shm = shared_memory.SharedMemory(create=True, size=dataset.nbytes)
+
 # Now create a NumPy array backed by shared memory
 b = np.ndarray(a.shape, dtype=a.dtype, buffer=shm.buf)
 
