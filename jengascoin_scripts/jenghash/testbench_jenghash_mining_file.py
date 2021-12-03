@@ -28,7 +28,7 @@ dataset = build_hash_struct(get_full_size(block), cache, out_type='dag', coin='j
 dataset_shm = shared_memory.SharedMemory(create=True, size=dataset.nbytes)
 
 # Now create a NumPy array backed by shared memory
-b = np.ndarray(a.shape, dtype=a.dtype, buffer=shm.buf)
+b = np.ndarray(dataset.shape, dtype=dataset.dtype, buffer=dataset_shm.buf)
 
 print("dataset completed. \n   now mining...")
 

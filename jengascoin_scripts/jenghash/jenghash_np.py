@@ -31,6 +31,7 @@ import numpy as np
 from hash_utils import *
 from random import randint
 from blake3 import blake3
+from multiprocessing import shared_memory
 
 
 # blake3 hash function, outputs 32 bytes unless otherwise specified
@@ -169,7 +170,11 @@ def calc_dataset(full_size, cache):
     # dataset = []
     percent_done = 0
     total_size = full_size // HASH_BYTES
-    dataset = np.empty([total_size, HASH_BYTES // WORD_BYTES], np.uint32)
+
+    dataset_shm = shared_memory.SharedMemory(create=True, size=full_size)
+    # Now create a NumPy array backed by shared memory
+    dataset = np.ndarray([total_size, HASH_BYTES // WORD_BYTES], dtype=np.uint32, buffer=dataset_shm.buf)
+
     print("percent done:       ", end="")
     for i in range(total_size):
         # dataset.append(calc_dataset_item(cache, i))
