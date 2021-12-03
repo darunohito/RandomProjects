@@ -26,6 +26,7 @@
 import copy
 import os
 import time
+import json
 import numpy as np
 from hash_utils import *
 from random import randint
@@ -260,6 +261,93 @@ def mine(full_size, dataset, header, difficulty, nonce):
             print_len = len(print_str)
             print(print_str, end="")  # debug only!
     return nonce
+
+
+# must be paired with function in calling program which writes/reads
+# JSON-encoded dictionaries, and handles initialization.
+# "mode" takes 'run' or 'init'
+# "parent" takes 'miner' or 'node'
+def miner_file_update(metadata=None, mode='run', parent='miner'):
+    if parent == 'miner':
+        file_name = {
+            'out':  'miner_in.txt',
+            'in':   'miner_out.txt'
+        }
+    elif parent == 'node':
+        file_name = {
+            'out':  'miner_out.txt',
+            'in':   'miner_in.txt'
+        }
+    else:
+        raise Exception(f"parent of 'miner' or 'node' expected, '{parent}' given")
+    if mode == 'run':
+        if metadata is None:
+            metadata = {
+                'update_period':    1.0,  # seconds, float
+                'elapsed_time':     1.0   # seconds, float
+            }
+            hash_ceil = 10000
+        hash_ceil = (hash_ceil * metadata['update_period']) // metadata['elapsed_time']
+        # create file paths
+        cwd = os.path.dirname(__file__)
+        file_dir = os.path.join(cwd, 'miner_temp')
+
+        if not os.path.exists(file_dir):
+            os.mkdir(file_dir)
+        # write metadata to output file
+        with open(os.path.join(file_dir, file_name['out']), 'w') as f_out:
+            json.dump(metadata, f_out)
+            f_out.close()
+        # overwrite metadata from input file
+        with open(os.path.join(file_dir, file_name['in']), 'r') as f_in:
+            f_in.close()
+            metadata = json.load(f_in)
+
+    elif mode == 'init':
+        metadata = {
+            # miner inputs
+            'update_period': 1.0,  # seconds, float
+            'diff': 2 ** 256,
+            'header': '\xF0' * 32,
+            # miner outputs
+            'num_hashes': 0,
+            'best_hash': get_target(2)
+        }
+        hash_ceil = 10000
+    else:
+        raise Exception(f"mode of [null], 'run' or 'init' expected, '{mode}' given")
+
+    return metadata, hash_ceil
+
+
+# miner returns nonce directly,
+# but will listen in the "miner_in" file for updates from node
+# and will write debug/metadata to "miner_out"
+# "update_period" is in seconds
+# "mode" takes 'run' or 'init'
+def mine_to_file(full_size, dataset, threads=1):
+    metadata, hash_ceil = miner_file_update(mode='init')
+    out = {  # init output
+        "mix digest":   '\xFF' * 32,
+        "result":       '\xFF' * 32
+    }
+    nonce = []
+    for i in range(threads):
+        nonce[i] = random_nonce()
+    target = get_target(metadata['diff'])
+    while 1:
+        n_hashes = 0
+        while n_hashes < hash_ceil:
+            out = hashimoto_full(full_size, dataset, metadata["header"], nonce)
+            nonce = (nonce + 1) % 2 ** 64
+            n_hashes += 1
+            out_mix = out.get("mix digest")
+            if out_mix < target:
+                return nonce, out
+            if out_mix < metadata['best_hash']:  # can be left out for efficiency
+                metadata['best_hash'] = out_mix  # can be left out for efficiency
+        metadata["num_hashes"] = n_hashes
+        metadata, hash_ceil = miner_file_update(metadata, mode='run')
 
 
 # ----- Defining the Seed Hash ------------------------------------------------

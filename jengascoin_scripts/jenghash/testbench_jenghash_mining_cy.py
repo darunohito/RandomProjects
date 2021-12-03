@@ -30,6 +30,7 @@ epoch = int(sys.argv[1])
 block = epoch * EPOCH_LENGTH
 hdr = jng.encode_int(int(sys.argv[2], base=16))[::-1]
 hdr = '\x00' * (32 - len(hdr)) + hdr
+hdr = '\x00' * (32 - len(hdr)) + hdr
 diff = int(sys.argv[3], base=16)
 # print("mining target: ", decode_int(get_target(diff)))
 

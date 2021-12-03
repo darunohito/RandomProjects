@@ -13,6 +13,7 @@ import multiprocessing as mp
 from blake3 import blake3
 import codecs
 import struct
+import json
 from jh_definitions import *
 
 
@@ -316,10 +317,8 @@ def hashimoto_full(np.uint64_t full_size, dataset, header, np.uint64_t nonce):
 # mining process.
 
 def get_target(difficulty):
-    # return encode_int(2 ** 256 - difficulty)
-    # byte strings are little-endian
+    # byte strings are little-endian, have to reverse for target comparison
     return encode_int(2 ** 256 // difficulty).ljust(32, '\0')[::-1]
-    # return zpad(encode_int(2 ** 256 // difficulty), 64)[::-1]
 
 
 def random_nonce():
@@ -328,11 +327,59 @@ def random_nonce():
 
 def mine(full_size, dataset, header, difficulty, nonce):
     target = get_target(difficulty)
-    # while new_result > target:
-    # while decode_int(new_result) * difficulty > 2**256:
     while hashimoto_full(full_size, dataset, header, nonce).get("mix digest") > target:
         nonce = (nonce + 1) % 2 ** 64
-        # new_result = hashimoto_full(full_size, dataset, header, nonce).get("mix digest")
+    return nonce
+    
+    
+# must be paired with function in calling program which writes/reads
+# JSON-encoded dictionaries, and handles initialization.
+def miner_file_update(metadata={}, mode='run'):
+    if mode == 'run':
+        # create file paths
+        cwd = os.path.dirname(__file__)
+        file_dir = os.path.join(cwd, 'miner_temp')
+        filepath_out = os.path.join(file_dir, 'miner_out')
+        filepath_out = os.path.join(file_dir, 'miner_in')
+        
+        if not os.path.exists(file_dir):
+            os.mkdir(file_dir)
+        # write metadata to output file
+        with open(filepath_out, 'w') as f_out:
+            json.dump(metadata, f_out) 
+        # overwrite metadata from input file 
+        with open(filepath_in, 'r') as f_in:
+            metadata = json.load(f_in) 
+    
+    elif mode == 'init':
+        metadata = 
+            {
+                #miner inputs
+                "diff":             2 ** 256,
+                "header":           '\xF0' * 32,
+                "update_period":    1, # seconds, float
+                # miner outputs
+                'num_hashes':       0, 
+                'update_period':    update_period,
+                'best_hash':        get_target(2) 
+            }
+            hash_ceil = 1000
+        
+    return metadata, hash_ceil
+ 
+    
+# miner returns nonce directly to php call, 
+# but will listen in the "miner_in" file for updates from node
+# and will write debug/metadata to miner_out
+# "update_period" is in seconds    
+# "mode" takes 'run' or 'init'
+def mine_to_file(full_size, dataset, update_period=1
+    metadata, hash_ceil = miner_file_update(mode='init')
+    target = get_target(difficulty)
+    while  > target:
+        out = hashimoto_full(full_size, dataset, header, nonce)
+        nonce = (nonce + 1) % 2 ** 64
+        metadata.num_hashes += 1
     return nonce
 
 

@@ -36,6 +36,7 @@ from random import randint
 import multiprocessing as mp
 # from blake3 import blake3
 import sha3
+import json
 
 from hash_utils import *
 
@@ -270,6 +271,72 @@ def mine(full_size, dataset, header, difficulty, nonce):
             print_str = f"hashrate: {hashrate:6.2f} H/s, best hash: {decode_int(best_hash):078d}"
             print_len = len(print_str)
             print(print_str, end="")  # debug only!
+    return nonce
+
+
+# must be paired with function in calling program which writes/reads
+# JSON-encoded dictionaries, and handles initialization.
+def miner_file_update(metadata=None, mode='run'):
+    if mode == 'run':
+        if metadata is None:
+            metadata = {
+                'num_hashes':       1000,
+                'update_period':    1.0,  # seconds, float
+                'elapsed_time':     1.0   # seconds, float
+            }
+        hash_ceil = (metadata['num_hashes'] * metadata['update_period']) // metadata['elapsed_time']
+        # create file paths
+        cwd = os.path.dirname(__file__)
+        file_dir = os.path.join(cwd, 'miner_temp')
+
+        if not os.path.exists(file_dir):
+            os.mkdir(file_dir)
+        # write metadata to output file
+        with open(os.path.join(file_dir, 'miner_out'), 'w') as f_out:
+            json.dump(metadata, f_out)
+            f_out.close()
+        # overwrite metadata from input file
+        with open(os.path.join(file_dir, 'miner_in'), 'r') as f_in:
+            f_in.close()
+            metadata = json.load(f_in)
+
+    elif mode == 'init':
+        metadata = {
+            # miner inputs
+            "diff": 2 ** 256,
+            "header": '\xF0' * 32,
+            # miner outputs
+            'num_hashes': 0,
+            'update_period': 1,  # seconds, float
+            'best_hash': get_target(2)
+        }
+        hash_ceil = 1000
+    else:
+        raise Exception(f"mode of [null], 'run' or 'init' expected, '{mode}' given")
+
+    return metadata, hash_ceil
+
+
+# miner returns nonce directly to php call,
+# but will listen in the "miner_in" file for updates from node
+# and will write debug/metadata to miner_out
+# "update_period" is in seconds
+# "mode" takes 'run' or 'init'
+def mine_to_file(full_size, dataset, threads=1):
+    metadata, hash_ceil = miner_file_update(mode='init')
+    n_hashes = 0
+    out = {  # init output
+        "mix digest":   '\xFF' * 32,
+        "result":       '\xFF' * 32
+    }
+    nonce = []
+    for i in range(threads):
+        nonce[i] = random_nonce()
+    target = get_target(metadata.get('diff'))
+    while out.get("mix digest") > target:
+        out = hashimoto_full(full_size, dataset, metadata["header"], nonce)
+        nonce = (nonce + 1) % 2 ** 64
+        n_hashes += 1
     return nonce
 
 
