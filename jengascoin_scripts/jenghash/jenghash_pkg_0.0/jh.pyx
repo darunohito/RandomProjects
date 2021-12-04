@@ -347,13 +347,14 @@ def miner_file_update(metadata={}, mode='run'):
         # write metadata to output file
         with open(filepath_out, 'w') as f_out:
             json.dump(metadata, f_out) 
+            f_out.close()
         # overwrite metadata from input file 
         with open(filepath_in, 'r') as f_in:
+            f_in.close()
             metadata = json.load(f_in) 
     
     elif mode == 'init':
-        metadata = 
-            {
+        metadata = {
                 #miner inputs
                 "diff":             2 ** 256,
                 "header":           '\xF0' * 32,
@@ -363,7 +364,7 @@ def miner_file_update(metadata={}, mode='run'):
                 'update_period':    update_period,
                 'best_hash':        get_target(2) 
             }
-            hash_ceil = 1000
+        hash_ceil = 1000
         
     return metadata, hash_ceil
  
@@ -373,10 +374,24 @@ def miner_file_update(metadata={}, mode='run'):
 # and will write debug/metadata to miner_out
 # "update_period" is in seconds    
 # "mode" takes 'run' or 'init'
-def mine_to_file(full_size, dataset, update_period=1
+def mine_to_file(full_size, dataset, update_period=1):
     metadata, hash_ceil = miner_file_update(mode='init')
     target = get_target(difficulty)
-    while  > target:
+    out = { 'mix digest': metadata['best_hash'],
+            'result': metadata['best_hash'] }
+    while out['mix digest'] > target:
+        out = hashimoto_full(full_size, dataset, header, nonce)
+        nonce = (nonce + 1) % 2 ** 64
+        metadata.num_hashes += 1
+    return nonce
+    
+    
+def mine_w_update(full_size, dataset, update_period=1):
+
+    target = get_target(difficulty)
+    out = { 'mix digest': metadata['best_hash'],
+            'result': metadata['best_hash'] }
+    while out['mix digest'] > target:
         out = hashimoto_full(full_size, dataset, header, nonce)
         nonce = (nonce + 1) % 2 ** 64
         metadata.num_hashes += 1
@@ -391,3 +406,30 @@ def get_seedhash(block):
     for i in range(block // C_EPOCH_LENGTH):
         s = serialize_hash(blake3_256(s))
     return s
+
+
+# ----- Main function ---------------------------------------------------------
+
+
+if __name__ == "__main__":
+    # import subprocess
+    import sh
+    from urllib.parse import urljoin
+
+    # example call:
+    # python3 jh.py http://peer1.jengas.io/ <public-key> <private-key>
+    if len(sys.argv) != 4:
+        print(sys.stderr, "usage: python3", sys.argv[0], "<peer-URL>", "<public-key>", "<private-key>")
+        sys.exit(1)
+    
+    peer = sys.argv[1]
+    
+    
+    # pull initial mining info
+    mining_info = sh.curl(urljoin(peer, url_path['mine_solo']))
+    print("Startup mining info:")
+    for key, value in mining_info:
+        print(key, value)
+    
+    
+    

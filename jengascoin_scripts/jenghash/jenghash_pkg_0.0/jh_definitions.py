@@ -12,3 +12,9 @@ HASH_BYTES = 64  # hash length in bytes
 DATASET_PARENTS = 256  # number of parents of each dataset element
 CACHE_ROUNDS = 3  # number of rounds in cache production
 ACCESSES = 64  # number of accesses in hashimoto loop
+
+
+url_path = {
+    mine_solo:      '/api.php?q=getMiningInfo',
+    submit_solo:    '/api.php?q=submitNonce',
+}

@@ -31,6 +31,7 @@ import numpy as np
 from hash_utils import *
 from random import randint
 from blake3 import blake3
+from binascii import hexlify
 
 
 # blake3 hash function, outputs 32 bytes unless otherwise specified
@@ -229,9 +230,8 @@ def hashimoto_full(full_size, dataset, header, nonce):
 # mining process.
 
 def get_target(difficulty):
-    # return encode_int(2 ** 256 - difficulty)
+    # byte strings are little-endian, have to reverse for target comparison
     return encode_int(2 ** 256 // difficulty).ljust(32, '\0')[::-1]
-    # return zpad(encode_int(2 ** 256 // difficulty), 64)[::-1]
 
 
 def random_nonce():
@@ -239,115 +239,90 @@ def random_nonce():
 
 
 def mine(full_size, dataset, header, difficulty, nonce):
-    print_interval = 1000  # debug only!
-    nonce_tries = 0  # debug only!
-    t_start = 0  # debug only!
-    print_len = 0  # debug only!
-    new_result = best_hash = get_target(2)  # debug only!
     target = get_target(difficulty)
-    while new_result > target:
+    while hashimoto_full(full_size, dataset, header, nonce).get("mix digest") > target:
         nonce = (nonce + 1) % 2 ** 64
-        if new_result < best_hash:  # debug only!
-            best_hash = new_result  # debug only!
-        new_result = hashimoto_full(full_size, dataset, header, nonce).get("mix digest")
-        nonce_tries += 1  # debug only!
-        if nonce_tries % print_interval == 0:  # debug only!
-            t_stop = time.perf_counter()
-            hashrate = print_interval / (t_stop - t_start)
-            t_start = t_stop
-            for _ in range(print_len):
-                print('\b', end = '')
-            print_str = f"hashrate: {hashrate:6.2f} H/s, best hash: {decode_int(best_hash):078d}"
-            print_len = len(print_str)
-            print(print_str, end="")  # debug only!
     return nonce
 
 
-# must be paired with function in calling program which writes/reads
-# JSON-encoded dictionaries, and handles initialization.
-# "mode" takes 'run' or 'init'
-# "parent" takes 'miner' or 'node'
-def miner_file_update(metadata=None, mode='run', parent='miner'):
-    if parent == 'miner':
-        file_name = {
-            'out':  'miner_in.txt',
-            'in':   'miner_out.txt'
-        }
-    elif parent == 'node':
-        file_name = {
-            'out':  'miner_out.txt',
-            'in':   'miner_in.txt'
-        }
-    else:
-        raise Exception(f"parent of 'miner' or 'node' expected, '{parent}' given")
-    if mode == 'run':
+# ------- Real-life Jengascoin miner implementation ---------------------------------
+
+
+# Jengascoin uses subtractive difficulty (not division-scaled)
+def get_target_jh(difficulty):
+    test_target = 2 ** 256 // 30000
+    # byte strings are little-endian, have to reverse for target comparison
+    return encode_int(test_target - difficulty).ljust(32, '\0')[::-1]
+    # return encode_int(2 ** 256 - difficulty).ljust(32, '\0')[::-1]
+
+
+def mine_w_update(full_size, dataset, peer_url, miner_info=None, update_period=3.0):
+
+    def reset_miner(update_per, hash_ceil, elapsed):
         if metadata is None:
-            metadata = {
-                'update_period':    1.0,  # seconds, float
-                'elapsed_time':     1.0   # seconds, float
-            }
-            hash_ceil = 10000
-        hash_ceil = (hash_ceil * metadata['update_period']) // metadata['elapsed_time']
-        # create file paths
-        cwd = os.path.dirname(__file__)
-        file_dir = os.path.join(cwd, 'miner_temp')
 
-        if not os.path.exists(file_dir):
-            os.mkdir(file_dir)
-        # write metadata to output file
-        with open(os.path.join(file_dir, file_name['out']), 'w') as f_out:
-            json.dump(metadata, f_out)
-            f_out.close()
-        # overwrite metadata from input file
-        with open(os.path.join(file_dir, file_name['in']), 'r') as f_in:
-            f_in.close()
-            metadata = json.load(f_in)
+        print(f"hashrate: {hash_ceil/elapsed:.0f} H/s, best hash: ", md['best_hash'])
+        miner_metadata = {}
+        miner_metadata['hash_ceil'] = (hash_ceil * update_per) // elapsed
+        miner_metadata.update({
+            'num_hashes': 0,  # initialization value
+            'best_hash': get_target_jh(1),  # initialization value
+            't_start': time.perf_counter()
+        })
+        return miner_metadata
 
-    elif mode == 'init':
-        metadata = {
-            # miner inputs
-            'update_period': 1.0,  # seconds, float
-            'diff': 2 ** 256,
-            'header': '\xF0' * 32,
-            # miner outputs
-            'num_hashes': 0,
-            'best_hash': get_target(2)
-        }
-        hash_ceil = 10000
-    else:
-        raise Exception(f"mode of [null], 'run' or 'init' expected, '{mode}' given")
-
-    return metadata, hash_ceil
-
-
-# miner returns nonce directly,
-# but will listen in the "miner_in" file for updates from node
-# and will write debug/metadata to "miner_out"
-# "update_period" is in seconds
-# "mode" takes 'run' or 'init'
-def mine_to_file(full_size, dataset, threads=1):
-    metadata, hash_ceil = miner_file_update(mode='init')
-    out = {  # init output
-        "mix digest":   '\xFF' * 32,
-        "result":       '\xFF' * 32
-    }
-    nonce = []
-    for i in range(threads):
-        nonce[i] = random_nonce()
-    target = get_target(metadata['diff'])
-    while 1:
-        n_hashes = 0
-        while n_hashes < hash_ceil:
-            out = hashimoto_full(full_size, dataset, metadata["header"], nonce)
+    md = reset_miner(update_period, 1000, 3.0)
+    nonce = random_nonce()
+    if miner_info is None:
+        miner_info = get_miner_input(peer_url)
+    target = get_target_jh(miner_info['diff_int'])
+    while True:
+        while md['num_hashes'] < md['hash_ceil']:
+            out = hashimoto_full(full_size, dataset, miner_info['header'], nonce)
+            if out['mix digest'] < md['best_hash']:
+                if out['mix digest'] < target:
+                    return nonce, out, miner_info['block'], miner_info['header']
+                md['best_hash'] = out['mix digest']
             nonce = (nonce + 1) % 2 ** 64
-            n_hashes += 1
-            out_mix = out.get("mix digest")
-            if out_mix < target:
-                return nonce, out
-            if out_mix < metadata['best_hash']:  # can be left out for efficiency
-                metadata['best_hash'] = out_mix  # can be left out for efficiency
-        metadata["num_hashes"] = n_hashes
-        metadata, hash_ceil = miner_file_update(metadata, mode='run')
+            md['num_hashes'] += 1
+        miner_info = get_miner_input(peer_url)
+        if miner_info['new']:
+            md = reset_miner(update_period, md['hash_ceil'], time.perf_counter()-md['t_start'])
+            target = get_target_jh(miner_info['diff_int'])
+
+
+def parse_mining_input(miner_in):
+    miner_input_parsed = {
+        'diff': hex(int(miner_in['difficulty'])),
+        'diff_int': int(miner_in['difficulty']),
+        'header': '0x' + base58.b58decode(miner_in['block']).hex(),  # "block" is actually hash of last block
+        'block': miner_in['height'],  # "height" is actually "block" number, for ethash
+    }
+    if miner_in['old_hdr'] != miner_input_parsed['header']:
+        miner_input_parsed['new'] = True
+    else:
+        miner_input_parsed['new'] = False
+    # *************************************************************************
+    miner_input_parsed['block'] = 10 * EPOCH_LENGTH  # DEBUG AND TEST ONLY!
+    # *************************************************************************
+    return miner_input_parsed
+
+
+def get_miner_input(peer_url, hdr=None):
+    # pull initial mining info
+    cmd = f"curl -s {urljoin(peer_url, url_path['mine_solo'])}"
+    sp = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
+    info, err = sp.communicate()
+    if json.loads(info)['status'] == 'error':
+        print(f"could not get mining info from {peer_url}")
+        sys.exit(1)
+    miner_in = json.loads(info)['data']
+    if hdr is None:
+        miner_in['old_hdr'] = False
+    else:
+        miner_in['old_hdr'] = hdr
+    # rc = sp.wait()
+    return parse_mining_input(miner_in)
 
 
 # ----- Defining the Seed Hash ------------------------------------------------
@@ -358,3 +333,46 @@ def get_seedhash(block):
     for i in range(block // EPOCH_LENGTH):
         s = serialize_hash(blake3_256(s))
     return s
+
+
+# ----- Main function ---------------------------------------------------------
+
+
+if __name__ == "__main__":
+    from subprocess import Popen, PIPE, STDOUT
+    import sys
+    # import sh
+    from urllib.parse import urljoin
+    from jh_definitions import *
+    import json
+    import base58
+
+    # example call:
+    # python3 jh.py http://peer1.jengas.io/ <public-key> <private-key>
+    if len(sys.argv) != 4:
+        print(sys.stderr, "usage: python3", sys.argv[0], "<peer-URL>", "<public-key>", "<private-key>")
+        sys.exit(1)
+    peer = sys.argv[1]
+
+    miner_input = get_miner_input(peer)
+
+    print("Startup mining info:")
+    for key, value in miner_input.items():
+        print(key, type(value), value)
+
+    seed = deserialize_hash(get_seedhash(miner_input['block']))
+    print("seed", "%064x" % decode_int(serialize_hash(seed)[::-1]), "\n   now acquiring cache...")
+    cache = build_hash_struct(get_cache_size(miner_input['block']), seed, out_type='cache', coin='jng')
+    print("cache completed. \n   now acquiring dag...")
+    dataset = build_hash_struct(get_full_size(miner_input['block']), cache, out_type='dag', coin='jng')
+    print("dataset completed. \n   now mining...")
+
+    while True:
+        nonce, out, block, header = mine_w_update(get_full_size(miner_input['block']), dataset, peer, miner_info=miner_input)
+
+        miner_input = get_miner_input(peer)
+        result = hashimoto_light(get_full_size(miner_input['block']), cache, miner_input['header'], nonce).get('mix digest')
+        if result <= get_target_jh(miner_input['diff_int']):
+            print("verification passed!")
+        else:
+            print("verification failed!")
