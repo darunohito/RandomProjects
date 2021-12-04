@@ -1,0 +1,15 @@
+{
+  "version": "0.2.1",
+  "tasks": [
+    {
+      "taskLabel": "task-jh",
+      "appliesTo": "jenghash_pkg_0.0/jh.c",
+      "type": "launch"
+    },
+    {
+      "taskLabel": "task-CMakeLists",
+      "appliesTo": "jenghash_pkg_0.0/CMakeLists.txt",
+      "type": "launch"
+    }
+  ]
+}

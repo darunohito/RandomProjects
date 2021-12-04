@@ -1,7 +1,8 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\jenghash_pkg_0.0"
   ],
-  "SelectedNode": "\\ethash_py3_np_cy.c",
+  "SelectedNode": "\\jenghash_pkg_0.0\\jh.pyx",
   "PreviewInSolutionExplorer": false
 }
