@@ -258,7 +258,7 @@ def get_target_jh(difficulty):
 
 def mine_w_update(full_size, dataset, peer_url, miner_info=None, update_period=3.0):
 
-    def reset_miner(update_per, hash_ceil, elapsed):
+    def reset_miner(update_per, hash_ceil, elapsed, metadata):
         if metadata is None:
 
         print(f"hashrate: {hash_ceil/elapsed:.0f} H/s, best hash: ", md['best_hash'])
