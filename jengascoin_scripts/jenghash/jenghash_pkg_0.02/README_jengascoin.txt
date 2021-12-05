@@ -1,9 +1,13 @@
 This is only tested on Windows. Please follow the steps exactly, and let me know if there are any issues getting it running.
 
 Install Python3:
-	a) Download & Install python3 (at least version 3.7), with the "add to PATH environment" option checked.
+	a) Download & Install python3 (*at least version 3.8*), with the "add to PATH environment" option checked.
 	b) Navigate to the python installation folder, and create a copy of "python.exe" named "python3.exe"
-		- This allows your path variable to deal with different versions of python on the same system.
+		- This allows your PATH variable to deal with different versions of python on the same system.
+
+Install Rust:
+	a) Download/install from here: https://rustup.rs/
+	b) make sure it's added to the PATH variable
 
 Setup:
 	a) Inside of the /jenghash_pkg/ directory, execute the "1_setup.bat" file. 

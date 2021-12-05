@@ -1,0 +1,13 @@
+# params_dict example: {'nonce': 1234, 'public_address': 'J2034'}
+def peer_request(peer_url, command_string, params_dict=None):
+    if isinstance(params_dict, dict):
+        for k, v in params_dict.items():
+            # format:  "&public_key=key"
+            command_string += f"&{str(k)}={str(v)}"
+    r = requests.get(urljoin(peer_url, command_string))
+    json_out = json.loads(r.content)
+    if json_out['status'] == 'error':
+        print(f"could not return {command_string} from {peer_url}")
+        print(json_out['data'])
+        # sys.exit(1)
+    return json_out
