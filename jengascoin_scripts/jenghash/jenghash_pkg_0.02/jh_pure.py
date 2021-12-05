@@ -34,6 +34,11 @@ from random import randint
 from blake3 import blake3
 from binascii import hexlify
 from jh_definitions import *
+from urllib.parse import urljoin
+import pycurl
+import certifi as cert
+from io import BytesIO as bIO
+import sys
 
 
 
@@ -93,7 +98,6 @@ def serialize_hash(h):
 
 def deserialize_hash(h):
     h = bytes_to_str(h)
-    # print("h to deserialize: ", h, ", type: ", type(h))
     return [decode_int(h[i:i + WORD_BYTES])
             for i in range(0, len(h), WORD_BYTES)]
 
@@ -150,19 +154,31 @@ def blake3_256(x):
 
 # ----- Parameters ------------------------------------------------------------
 
-
-def get_cache_size(block_number):
-    sz = CACHE_BYTES_INIT + \
-         CACHE_BYTES_GROWTH * (block_number // EPOCH_LENGTH)
+# for ethash use, do not use arg2 and arg3.
+# for jengascoin use, set arg2=True and arg3=target_size, where target_size
+# should be the same as what is used in get_full_size()
+def get_cache_size(block_number, jengascoin=False, size=None):
+    if isinstance(size, int) and jengascoin:
+        sz = CACHE_BYTES_INIT * size
+    else:
+        sz = CACHE_BYTES_INIT
+    if not jengascoin:
+        sz += CACHE_BYTES_GROWTH * (block_number // EPOCH_LENGTH)
     sz -= HASH_BYTES
     while not isprime(sz / HASH_BYTES):
         sz -= 2 * HASH_BYTES
     return sz
 
 
-def get_full_size(block_number):
-    sz = DATASET_BYTES_INIT + \
-         DATASET_BYTES_GROWTH * (block_number // EPOCH_LENGTH)
+# for ethash use, do not use arg2 and arg3.
+# for jengascoin use, set arg2=True and arg3=target_size [in *Gibibytes*]
+def get_full_size(block_number, jengascoin=False, size=None):
+    if isinstance(size, int) and jengascoin:
+        sz = DATASET_BYTES_INIT * size
+    else:
+        sz = DATASET_BYTES_INIT
+    if not jengascoin:
+        sz += DATASET_BYTES_GROWTH * (block_number // EPOCH_LENGTH)
     sz -= MIX_BYTES
     while not isprime(sz / MIX_BYTES):
         sz -= 2 * MIX_BYTES
@@ -270,7 +286,7 @@ def calc_dataset(full_size, cache):
     # generate the dataset
     t_start = time.perf_counter()
     # dataset = []
-    percent_done = 0
+    t_elapsed = percent_done = 0
     total_size = full_size // HASH_BYTES
     dataset = np.empty([total_size, HASH_BYTES // WORD_BYTES], np.uint32)
     print("percent done:       ", end="")
@@ -279,8 +295,9 @@ def calc_dataset(full_size, cache):
         dataset[i] = calc_dataset_item(cache, i)
         if (i / total_size) > percent_done + 0.0001:
             percent_done = i / total_size
-            print(f"\b\b\b\b\b\b{(percent_done * 100):5.2f}%", end="")
-    t_elapsed = time.perf_counter() - t_start
+            t_elapsed = time.perf_counter() - t_start
+            print(f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, "
+                  f"ETA: {(t_elapsed / percent_done / 60):7.0f}m", end="")
     print("DAG completed in [only!] ", t_elapsed, " seconds!  oWo  so fast")
 
     return dataset
@@ -331,9 +348,13 @@ def hashimoto_full(full_size, dataset, header, nonce):
 # We break "mine" down into smaller parts, to have better control over the
 # mining process.
 
-def get_target(difficulty):
+def get_target(difficulty, max_target=None, jengascoin=False):
     # byte strings are little-endian, have to reverse for target comparison
-    return encode_int(2 ** 256 // difficulty).ljust(32, '\0')[::-1]
+    if jengascoin and isinstance(max_target, int):
+        # byte strings are little-endian, have to reverse for target comparison
+        return encode_int(max(max_target - difficulty, 1)).ljust(32, '\0')[::-1]  # DEBUG AND TEST ONLY!
+    else:
+        return encode_int(2 ** 256 // difficulty).ljust(32, '\0')[::-1]
 
 
 def random_nonce():
@@ -350,17 +371,7 @@ def mine(full_size, dataset, header, difficulty, nonce):
 # ------- Real-life Jengascoin miner implementation ---------------------------------
 
 
-# Jengascoin currently uses subtractive difficulty (not division-scaled)
-def get_target_jh(difficulty):
-    test_target = 2 ** 256 // 30000  # DEBUG AND TEST ONLY!
-    # byte strings are little-endian, have to reverse for target comparison
-    # *************************************************************************
-    return encode_int(test_target - difficulty).ljust(32, '\0')[::-1]  # DEBUG AND TEST ONLY!
-    # *************************************************************************
-    # return encode_int(2 ** 256 - difficulty).ljust(32, '\0')[::-1]
-
-
-def mine_w_update(full_size, dataset, peer_url, miner_info=None, update_period=3.0, frozen=False, metadata=None):
+def mine_w_update(full_size, dataset, peer_url, max_target, miner_info=None, update_period=3.0, frozen=False, metadata=None):
     if isinstance(metadata, dict):
         _metadata = metadata
     else:
@@ -370,7 +381,7 @@ def mine_w_update(full_size, dataset, peer_url, miner_info=None, update_period=3
         }
     if miner_info is None:
         miner_info = get_miner_input(peer_url, frozen)
-    target = get_target_jh(miner_info['diff_int'])
+    target = get_target(miner_info['diff_int'], max_target=max_target, jengascoin=True)
 
     def reset_miner(_update_period, __metadata):
         print(f"hashrate: {__metadata['hash_ceil']/__metadata['elapsed']:.0f} H/s, block: ",
@@ -378,7 +389,7 @@ def mine_w_update(full_size, dataset, peer_url, miner_info=None, update_period=3
         __metadata.update({
             'hash_ceil': (__metadata['hash_ceil'] * _update_period) // __metadata['elapsed'],
             'num_hashes': 0,  # initialization value
-            'best_hash': get_target_jh(1),  # initialization value
+            'best_hash': get_target(1, max_target=max_target, jengascoin=True),  # initialization value
             't_start': time.perf_counter()
         })
         return __metadata
@@ -399,7 +410,7 @@ def mine_w_update(full_size, dataset, peer_url, miner_info=None, update_period=3
         if miner_info['new']:
             md['elapsed'] = time.perf_counter()-md['t_start']
             md = reset_miner(update_period, md)
-            target = get_target_jh(miner_info['diff_int'])
+            target = get_target(miner_info['diff_int'], max_target=max_target, jengascoin=True)
 
 
 def parse_mining_input(miner_in, __frozen=False):
@@ -418,18 +429,13 @@ def parse_mining_input(miner_in, __frozen=False):
     if __frozen:  # DEBUG AND TEST ONLY!
         miner_input_parsed['block'] = 10 * EPOCH_LENGTH
     # *************************************************************************
+    # print("miner_input_parsed: ", miner_input_parsed)
     return miner_input_parsed
 
 
 def get_miner_input(peer_url, hdr=None, _frozen=False):
-    # pull initial mining info
-    cmd = f"curl -s {urljoin(peer_url, url_path['mine_solo'])}"
-    sp = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
-    info, err = sp.communicate()
-    if json.loads(info)['status'] == 'error':
-        print(f"could not get mining info from {peer_url}")
-        sys.exit(1)
-    miner_in = json.loads(info)['data']
+    info = peer_request(peer_url, url_path['mine_solo'])
+    miner_in = info['data']
     if hdr is None:
         miner_in['old_hdr'] = False
     else:
@@ -438,14 +444,64 @@ def get_miner_input(peer_url, hdr=None, _frozen=False):
     return parse_mining_input(miner_in, __frozen=_frozen)
 
 
+def get_peer_block(peer_url, block_height):
+    # height_param = f"&height={block_height}"
+    height_param = {'height': block_height}
+    return peer_request(peer_url, url_path['get_block'], height_param)
+
+
+# ----- TESTNET ONLY ----- #
+def submit_solution(peer_url, submission_dict):
+    return peer_request(peer_url, url_path['submit_solo'], submission_dict)
+# ----- TESTNET ONLY ----- #
+
+
+# params_dict example: {'nonce': 1234, 'public_address': 'J2034'}
+def peer_request(peer_url, command_string, params_dict=None):
+    c = pycurl.Curl()
+    b = bIO()
+    if isinstance(params_dict, dict):
+        for k, v in params_dict.items():
+            # format:  "&public_key=key"
+            command_string += f"&{str(k)}={str(v)}"
+    c.setopt(c.WRITEDATA, b)
+    c.setopt(pycurl.CAINFO, cert.where())
+    c.setopt(c.URL, urljoin(peer_url, command_string))
+    c.perform()
+    json_out = json.loads(b.getvalue())
+    if json_out['status'] == 'error':
+        print(f"could not return {command_string} from {peer_url}")
+        print(json_out['data'])
+        # sys.exit(1)
+    return json_out
+
+
 # ----- Defining the Seed Hash ------------------------------------------------
 
 
-def get_seedhash(block):
-    s = '\x00' * 32
-    for i in range(block // EPOCH_LENGTH):
+# example alt_genesis: 'Satoshi is a steely-eyed missile man'
+def get_seedhash(block_height, alt_genesis=None):
+    if alt_genesis is None:
+        s = '\x00' * 32
+    else:
+        s = bytes(alt_genesis, 'utf-8')
+    for i in range(block_height // EPOCH_LENGTH):
         s = serialize_hash(blake3_256(s))
     return s
+
+
+# for building cache and/or dagger
+def get_seedset(block_height):
+    back_temp = block_height - int(block_height % EPOCH_LENGTH)
+    seeds = {
+        'back_number': back_temp,
+        'front_number': max(back_temp - EPOCH_LENGTH, 0)
+    }
+    seeds.update({
+        'back_hash': get_seedhash(seeds['back_number']),
+        'front_hash': get_seedhash(seeds['front_number'])
+    })
+    return seeds
 
 
 # ----- Main function ---------------------------------------------------------
@@ -460,18 +516,35 @@ if __name__ == "__main__":
     import json
     import base58
 
-
+    max_target_int = int(MAX_CHAIN_TARGET)
 
     # example call:
     # python3 jh.py http://peer1.jengas.io/ <public-key> <private-key>
-    if len(sys.argv) < 4 or len(sys.argv) > 5:
-        print(sys.stderr, "usage: python3", sys.argv[0], "<peer-URL>", "<public-key>", "<private-key>", "(opt)freeze")
+    if len(sys.argv) < 4 or len(sys.argv) > 6:
+        print(sys.stderr, "usage: python3", sys.argv[0], "<peer-URL>", "<public-key>",
+              "<private-key>", "(opt)threads", "(opt)freeze|f")
         sys.exit(1)
     peer = sys.argv[1]
-
+    if len(sys.argv) > 4:
+        threads = int(sys.argv[4])
     freeze = False
-    if sys.argv[4] == "freeze":
-        freeze = True  # FROZEN ONLY FOR DEBUG & TEST
+    freeze_block = 300000
+    if len(sys.argv) == 6:
+        if sys.argv[5] == "freeze" or sys.argv[5] == "f":
+            print("DEBUG MODE: BLOCK HEIGHT FROZEN")
+            freeze = True  # FROZEN ONLY FOR DEBUG & TEST
+
+    submission_dictionary = {
+        'nonce': '',  # base58 encoded nonce
+        # cmix: hex-encoded NEW FIELD (for ethash-style verification).
+        # This is the actual result to compare to the target.
+        'cmix': '',
+        # blakehash: hex-encoded CHANGED FIELD. Equals serialize_hash(blake_256(s + cmix)), with: s = blake3_512(base)
+        # and: base = str_to_bytes(header) + struct.pack("<Q", nonce).
+        'blakehash': '',
+        'public_key': sys.argv[2],
+        'private_key': sys.argv[3]
+    }
 
     miner_input = get_miner_input(peer, _frozen=freeze)  # FROZEN ONLY FOR DEBUG & TEST
 
@@ -479,24 +552,36 @@ if __name__ == "__main__":
     for key, value in miner_input.items():
         print(key, type(value), value)
 
-    seed = deserialize_hash(get_seedhash(miner_input['block']))
+    # seed = deserialize_hash(get_seedhash(miner_input['block']))
+    seed = deserialize_hash(get_seedhash(freeze_block))
     print("seed", "%064x" % decode_int(serialize_hash(seed)[::-1]), "\n   now acquiring cache...")
-    cache = build_hash_struct(get_cache_size(miner_input['block']), seed, out_type='cache', coin='jng')
+    # cache = build_hash_struct(get_cache_size(miner_input['block'], True, 1), seed, out_type='cache', coin='jng')
+    cache = build_hash_struct(get_cache_size(freeze_block), seed, out_type='cache', coin='jng')
     print("cache completed. \n   now acquiring dag...")
-    dataset = build_hash_struct(get_full_size(miner_input['block']), cache, out_type='dag', coin='jng')
+    # dataset = build_hash_struct(get_full_size(miner_input['block'], True, 1), cache, out_type='dag', coin='jng')
+    dataset = build_hash_struct(get_full_size(freeze_block), cache, out_type='dag', coin='jng')
     print("dataset completed. \n   now mining...")
 
     found = 0
     verified = 0
     _md = None
     while True:  # FROZEN ONLY FOR DEBUG & TEST
-        nonce, out, block, header, _md = mine_w_update(get_full_size(miner_input['block']),
-                                                  dataset, peer, miner_input, 3.0, freeze, _md)
+        nonce, out, block, header, _md = mine_w_update(get_full_size(miner_input['block'], True, 1),
+                                                  dataset, peer, max_target_int, miner_input, 3.0, freeze, _md)
+        submission_dictionary.update({
+            'nonce': base58.b58encode_int(nonce),
+            'cmix': str_to_bytes(out['mix digest']).hex(),
+            'blakehash': str_to_bytes(out['result']).hex()
+        })
+
         found += 1
         miner_input = get_miner_input(peer, header, freeze)
-        result = hashimoto_light(get_full_size(miner_input['block']), cache,
+        result = hashimoto_light(get_full_size(miner_input['block'], True, 1), cache,
                                  miner_input['header'], nonce).get('mix digest')
-        if result <= get_target_jh(miner_input['diff_int']):
+
+        submission_response = submit_solution(peer, submission_dict=submission_dictionary)
+
+        if result <= get_target(miner_input['diff_int'], max_target=max_target_int, jengascoin=True):
             verified += 1
             print("block found...verification passed!    oWo    found: %d, verified: %d" % (found, verified))
         else:

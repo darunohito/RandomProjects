@@ -12,9 +12,11 @@ HASH_BYTES = 64  # hash length in bytes
 DATASET_PARENTS = 256  # number of parents of each dataset element
 CACHE_ROUNDS = 3  # number of rounds in cache production
 ACCESSES = 64  # number of accesses in hashimoto loop
-
+JENESIS = 'Satoshi is a steely-eyed missile man'
+MAX_CHAIN_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
 
 url_path = {
-    'mine_solo':      '/api.php?q=getMiningInfo',
-    'submit_solo':    '/api.php?q=submitNonce',
+    'mine_solo':        '/api.php?q=getMiningInfo',
+    'submit_solo':      '/api.php?q=submitNonce',
+    'get_block':       '/api.php?q=getBlock'  # =integer
 }
