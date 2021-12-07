@@ -23,7 +23,7 @@
 # See also: https://pypi.org/project/pysha3/
 #
 
-
+import copy
 import os
 import time
 import json
@@ -32,16 +32,10 @@ import struct
 import numpy as np
 from random import randint
 from blake3 import blake3
-import requests
 from binascii import hexlify
 from jh_definitions import *
 from urllib.parse import urljoin
-import multiprocessing as mp
-from multiprocessing import shared_memory
-from multiprocessing.managers import SharedMemoryManager
-from itertools import repeat
-import copy
-import threading
+import pycurl
 import certifi as cert
 from io import BytesIO as bIO
 import sys
@@ -201,8 +195,7 @@ takes:
 """
 
 
-# need to add length-check to shm input to release old daggers/caches
-def build_hash_struct(out_size, seed, out_type='cache', coin='jng', threads=1, shm_name=None):
+def build_hash_struct(out_size, seed, out_type='cache', coin='jng'):
     # find directory and build file name
     if out_type == 'cache':
         name_temp = int_list_to_bytes(seed)
@@ -220,9 +213,7 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng', threads=1, s
     if os.path.exists(filepath):
         print(f"loading {out_type} for length: ", out_size, " and short_name: ", short_name)
         with open(filepath, 'rb') as file:
-            shm = mp.shared_memory.SharedMemory(create=True, size=out_size)
-            hash_struct = np.load(filepath)
-            return hash_struct, shm.name
+            return np.load(filepath)
     print(f"  no saved {out_type} found, generating hash structure\n \
          this will take a while... ", end="")
 
@@ -232,16 +223,13 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng', threads=1, s
         # p = mp.Process(target=mkcache, args=(out_size, seed))
         # p.start()
         # hash_struct = q.get()
-        shm_name = mkcache(cache_size=out_size, seed=seed)
+        hash_struct = mkcache(cache_size=out_size, seed=seed)
     elif out_type == 'dag':
-        shm_name = calc_dataset(full_size=out_size, cache=seed, thread_count=threads)
+        hash_struct = calc_dataset(full_size=out_size, cache=seed)
     else:
         raise Exception(f"out_type of 'cache' or 'dag' expected, '{out_type}' given")
-
-    # Load or Create shared memory instance
-    total_size = out_size // HASH_BYTES
-    shm = mp.shared_memory.SharedMemory(name=shm_name, create=False)
-    hash_struct = np.ndarray([total_size, HASH_BYTES // WORD_BYTES], np.uint32, buffer=shm.buf)
+    # hash_struct = np.array(hash_struct, 'uint32')  # convert to numpy array
+    # gc.collect()  # attempt to free memory
 
     # save newly-generated hash structure
     if not os.path.exists(file_dir):
@@ -250,7 +238,7 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng', threads=1, s
         print(f"\nsaving {out_type} for length: ", out_size, " and short_name: ", short_name)
         np.save(filepath, hash_struct)
 
-    return hash_struct, shm_name
+    return hash_struct
 
 
 # ----- Cache Generation ------------------------------------------------------
@@ -259,11 +247,8 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng', threads=1, s
 def mkcache(cache_size, seed):
     n = cache_size // HASH_BYTES
 
-    # Create shared memory instance
-    shm = mp.shared_memory.SharedMemory(create=True, size=cache_size)
-    o = np.ndarray([n, HASH_BYTES // WORD_BYTES], np.uint32, buffer=shm.buf)
-
     # Sequentially produce the initial dataset
+    o = np.empty([n, HASH_BYTES // WORD_BYTES], np.uint32)
     o[0] = blake3_512(seed)
     for i in range(1, n):
         o[i] = blake3_512(int_list_to_bytes(o[i-1]))
@@ -276,17 +261,13 @@ def mkcache(cache_size, seed):
             # a list of 4-byte integers
             o_temp = int_list_to_bytes(list(map(xor, o[(i - 1 + n) % n], o[v])))
             o[i] = blake3_512(o_temp)
-    return shm.name
+    return o
 
 
 # ----- Full dataset calculation ----------------------------------------------
 
 
-def calc_dataset_item(cache, i, total_size, dataset):
-
-    # shm = mp.shared_memory.SharedMemory(name=shm_name_dataset, create=False)
-    # dataset = np.ndarray([total_size, HASH_BYTES // WORD_BYTES], np.uint32, buffer=shm.buf)
-
+def calc_dataset_item(cache, i):
     n = len(cache)
     r = HASH_BYTES // WORD_BYTES
     i = int(i)
@@ -298,53 +279,28 @@ def calc_dataset_item(cache, i, total_size, dataset):
     for j in range(DATASET_PARENTS):
         cache_index = fnv(i ^ j, mix[j % r])
         mix = list(map(fnv, mix, cache[cache_index % n]))
-    dataset[i] = blake3_512(int_list_to_bytes(mix))
-    # return blake3_512(int_list_to_bytes(mix))
-    # shm.close()
-    return
+    return blake3_512(int_list_to_bytes(mix))
 
 
-def calc_dataset(full_size, cache, thread_count=1):
+def calc_dataset(full_size, cache):
     # generate the dataset
     t_start = time.perf_counter()
     # dataset = []
     t_elapsed = percent_done = 0
     total_size = full_size // HASH_BYTES
-
-    # Load or Create shared memory instance for dagger
-
-    with SharedMemoryManager() as smm:
-        shm = smm.SharedMemory(create=True, size=full_size)
-        dataset = np.ndarray([total_size, HASH_BYTES // WORD_BYTES], np.uint32, buffer=shm.buf)
-        # shm = shared_memory.SharedMemory(create=True, size=full_size)
-        shm_name_dataset = shm.name
-        r = [], p = []
-        for th in range(thread_count):
-            r[th] = range(th, total_size, thread_count)
-            p[th] = mp.Process(calc_dataset_item(cache, ))
-    # dataset = np.empty([total_size, HASH_BYTES // WORD_BYTES], np.uint32)
-
-    # print("percent done:       ", end="")
-
-    p = mp.Pool(processes=thread_count)
-    # p.map(calc_dataset_item, range(total_size))  # range(0,1000) if you want to replicate your example
-    # p.starmap(calc_dataset_item, zip(repeat(cache), range(total_size), repeat(total_size), repeat(shm_name_dataset)))
-    p.close()
-    p.join()
-
-    # for i in range(total_size):
+    dataset = np.empty([total_size, HASH_BYTES // WORD_BYTES], np.uint32)
+    print("percent done:       ", end="")
+    for i in range(total_size):
         # dataset.append(calc_dataset_item(cache, i))
-        # dataset[i] = calc_dataset_item(cache, i)
-        # if (i / total_size) > percent_done + 0.0001:
-        #     percent_done = i / total_size
-        #     t_elapsed = time.perf_counter() - t_start
-        #     print(f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, "
-        #           f"ETA: {(t_elapsed / percent_done / 60):7.0f}m", end="")
-    t_elapsed = time.perf_counter() - t_start
+        dataset[i] = calc_dataset_item(cache, i)
+        if (i / total_size) > percent_done + 0.0001:
+            percent_done = i / total_size
+            t_elapsed = time.perf_counter() - t_start
+            print(f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, "
+                  f"ETA: {(t_elapsed / percent_done / 60):7.0f}m", end="")
     print("DAG completed in [only!] ", t_elapsed, " seconds!  oWo  so fast")
-    shm.close()
-    return shm_name_dataset
-    # return dataset
+
+    return dataset
 
 
 # ----- Main Loop -------------------------------------------------------------
@@ -502,12 +458,17 @@ def submit_solution(peer_url, submission_dict):
 
 # params_dict example: {'nonce': 1234, 'public_address': 'J2034'}
 def peer_request(peer_url, command_string, params_dict=None):
+    c = pycurl.Curl()
+    b = bIO()
     if isinstance(params_dict, dict):
         for k, v in params_dict.items():
             # format:  "&public_key=key"
             command_string += f"&{str(k)}={str(v)}"
-    r = requests.get(urljoin(peer_url, command_string))
-    json_out = json.loads(r.content)
+    c.setopt(c.WRITEDATA, b)
+    c.setopt(pycurl.CAINFO, cert.where())
+    c.setopt(c.URL, urljoin(peer_url, command_string))
+    c.perform()
+    json_out = json.loads(b.getvalue())
     if json_out['status'] == 'error':
         print(f"could not return {command_string} from {peer_url}")
         print(json_out['data'])
@@ -564,7 +525,6 @@ if __name__ == "__main__":
               "<private-key>", "(opt)threads", "(opt)freeze|f")
         sys.exit(1)
     peer = sys.argv[1]
-    threads = 1
     if len(sys.argv) > 4:
         threads = int(sys.argv[4])
     freeze = False
@@ -595,14 +555,11 @@ if __name__ == "__main__":
     # seed = deserialize_hash(get_seedhash(miner_input['block']))
     seed = deserialize_hash(get_seedhash(freeze_block))
     print("seed", "%064x" % decode_int(serialize_hash(seed)[::-1]), "\n   now acquiring cache...")
-    shm_c = mp.shared_memory.SharedMemory(create=True, size=get_cache_size(miner_input['block']))
-    cache, c_shm_name = build_hash_struct(get_cache_size(miner_input['block'], True, 1), seed,
-                              out_type='cache', coin='jng')
-    # cache = build_hash_struct(get_cache_size(freeze_block), seed, out_type='cache', coin='jng')
+    # cache = build_hash_struct(get_cache_size(miner_input['block'], True, 1), seed, out_type='cache', coin='jng')
+    cache = build_hash_struct(get_cache_size(freeze_block), seed, out_type='cache', coin='jng')
     print("cache completed. \n   now acquiring dag...")
-    dataset, d_shm_name = build_hash_struct(get_full_size(miner_input['block'], True, 1), cache, threads=threads,
-                                out_type='dag', coin='jng')
-    # dataset = build_hash_struct(get_full_size(freeze_block), cache, out_type='dag', coin='jng')
+    # dataset = build_hash_struct(get_full_size(miner_input['block'], True, 1), cache, out_type='dag', coin='jng')
+    dataset = build_hash_struct(get_full_size(freeze_block), cache, out_type='dag', coin='jng')
     print("dataset completed. \n   now mining...")
 
     found = 0
