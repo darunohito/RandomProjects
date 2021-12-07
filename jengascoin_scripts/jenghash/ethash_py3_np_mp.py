@@ -22,135 +22,33 @@
 # Note: the Keccak hashes are called keccak_*, not sha3_*
 # See also: https://pypi.org/project/pysha3/
 #
-
-import copy
-import os
-import time
-import json
+import base64
 import codecs
+import copy
 import struct
+import os
+import pickle
+import time
 import numpy as np
+# cimport numpy as np
+import gc
 from random import randint
-from blake3 import blake3
-from binascii import hexlify
 import multiprocessing as mp
-from multiprocessing.managers import SharedMemoryManager
-from jh_definitions import *
-from joblib import Parallel, delayed
-from itertools import repeat
+# from blake3 import blake3
+import sha3
+import json
+
+from hash_utils import *
 
 
+# sha3 hash function, outputs 64 bytes
+
+def sha3_512(x):
+    return hash_words(lambda v: sha3.keccak_512(v).digest(), 64, x)
 
 
-# ----- Definitions -- DO NOT CHANGE (or record backup before changing >.> ) --
-
-
-WORD_BYTES = 4  # bytes in word
-DATASET_BYTES_INIT = 2 ** 30  # bytes in dataset at genesis
-DATASET_BYTES_GROWTH = 2 ** 23  # dataset growth per epoch
-CACHE_BYTES_INIT = 2 ** 24  # bytes in cache at genesis
-CACHE_BYTES_GROWTH = 2 ** 17  # cache growth per epoch
-EPOCH_LENGTH = 30000  # blocks per epoch
-MIX_BYTES = 128  # width of mix
-HASH_BYTES = 64  # hash length in bytes
-DATASET_PARENTS = 256  # number of parents of each dataset element
-CACHE_ROUNDS = 3  # number of rounds in cache production
-ACCESSES = 64  # number of accesses in hashimoto loop
-
-
-# ----- Appendix --------------------------------------------------------------
-
-
-def decode_int(s):
-    x = 0
-    for i in range(len(s)):
-        x += ord(s[i]) * pow(256, i)
-    return x
-
-
-def bytes_to_str(b):
-    if isinstance(b, (bytes, bytearray)):
-        return ''.join(map(chr, b))
-    if isinstance(b, str):
-        return b
-    raise TypeError("Wanted bytes|bytearray, got ", type(b))
-
-
-def encode_int(s):
-    a = "%x" % s
-    x = codecs.decode('0' * (len(a) % 2) + a, 'hex')[::-1]
-    x = bytes_to_str(x)
-    return '' if s == 0 else x
-
-
-def zpad(s, length):
-    return s.ljust(length, '\0')
-
-
-def int_list_to_bytes(ls):
-    return struct.pack("{}I".format(len(ls)), *ls)
-
-
-def serialize_hash(h):
-    h_serial = ''.join([encode_int(x).ljust(4, '\0') for x in h])
-    return h_serial
-
-
-def deserialize_hash(h):
-    h = bytes_to_str(h)
-    # print("h to deserialize: ", h, ", type: ", type(h))
-    return [decode_int(h[i:i + WORD_BYTES])
-            for i in range(0, len(h), WORD_BYTES)]
-
-
-def str_to_bytes(s):
-    s_ints = [0] * len(s)
-    for i in range(len(s)):
-        s_ints[i] = ord(s[i])
-    return bytearray(s_ints)
-
-
-def hash_words(h, sz, x):
-    if isinstance(x, list):
-        x = serialize_hash(x)
-    if isinstance(x, str):
-        x = str_to_bytes(x)
-    y = h(x)
-    return deserialize_hash(y)
-
-
-def xor(a, b):
-    return a ^ b
-
-
-def isprime(x):
-    for i in range(2, int(x ** 0.5)):
-        if x % i == 0:
-            return False
-    return True
-
-
-# ----- Data aggregation function ---------------------------------------------
-
-
-FNV_PRIME = 0x01000193
-
-
-def fnv(v1, v2):
-    return ((v1 * FNV_PRIME) ^ v2) % 2 ** 32
-
-
-
-# blake3 hash function, outputs 32 bytes unless otherwise specified
-
-def blake3_512(x):
-    h = hash_words(lambda v: blake3(v).digest(length=64), 64, x)
-    return h
-
-
-def blake3_256(x):
-    h = hash_words(lambda v: blake3(v).digest(), 32, x)
-    return h
+def sha3_256(x):
+    return hash_words(lambda v: sha3.keccak_256(v).digest(), 32, x)
 
 
 # ----- Parameters ------------------------------------------------------------
@@ -184,6 +82,52 @@ takes:
 """
 
 
+# def build_hash_struct(out_size, seed, out_type='cache', coin='eth'):
+    # # find directory and build file name
+    # if out_type == 'cache':
+        # name_temp = int_list_to_bytes(seed)
+    # elif out_type == 'dag':
+        # name_temp = seed[0]
+    # else:
+        # raise Exception(f"out_type of 'cache' or 'dag' expected, '{out_type}' given")
+    # short_name = sha3.keccak_256(name_temp).hexdigest()[0:15]
+    # name = out_type + '_L_' + str(out_size) + "_C_" + short_name + '.npy'
+    # cwd = os.path.dirname(__file__)
+    # file_dir = os.path.join(cwd, f"{coin}_{out_type}_dir")
+    # filepath = os.path.join(file_dir, name)
+
+    # # check for a saved hash structure
+    # if os.path.exists(filepath):
+        # print(f"loading {out_type} for length: ", out_size, " and short_name: ", short_name)
+        # with open(filepath, 'rb') as file:
+            # return np.load(filepath)
+    # print(f"  no saved {out_type} found, generating hash structure\n \
+         # this will take a while... ", end="")
+
+    # # since no saved structure exist, build from scratch
+    # if out_type == 'cache':
+        # # q = mp.Queue()
+        # # p = mp.Process(target=mkcache, args=(out_size, seed))
+        # # p.start()
+        # # hash_struct = q.get()
+        # hash_struct = mkcache(cache_size=out_size, seed=seed)
+    # elif out_type == 'dag':
+        # hash_struct = calc_dataset(full_size=out_size, cache=seed)
+    # else:
+        # raise Exception(f"out_type of 'cache' or 'dag' expected, '{out_type}' given")
+    # # hash_struct = np.array(hash_struct, 'uint32')  # convert to numpy array
+    # # gc.collect()  # attempt to free memory
+
+    # # save newly-generated hash structure
+    # if not os.path.exists(file_dir):
+        # os.mkdir(file_dir)
+    # with open(filepath, 'wb') as name:
+        # print(f"\nsaving {out_type} for length: ", out_size, " and short_name: ", short_name)
+        # np.save(filepath, hash_struct)
+
+    # return hash_struct
+    
+    
 def build_hash_struct(out_size, seed, out_type='cache', coin='jng', thread_count=1):
     # find directory and build file name
     if out_type == 'cache':
@@ -210,22 +154,11 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng', thread_count
     if out_type == 'cache':
         hash_struct = mkcache(cache_size=out_size, seed=seed)
     elif out_type == 'dag':
-        c_shm = mp.shared_memory.SharedMemory(create=True, size=len(seed)*HASH_BYTES)
-        cache = np.ndarray([len(seed), len(seed[0])], np.uint32, buffer=c_shm.buf)
-        cache[:] = seed[:]
-        seed = []
-        
-        d_shm = mp.shared_memory.SharedMemory(create=True, size=out_size)
-        hash_struct = np.ndarray([out_size // HASH_BYTES, HASH_BYTES // WORD_BYTES], np.uint32, buffer=d_shm.buf)
-        
-        # hash_struct = np.empty([out_size // HASH_BYTES, HASH_BYTES // WORD_BYTES], np.uint32)
+        hash_struct = np.empty([out_size // HASH_BYTES, HASH_BYTES // WORD_BYTES], np.uint32)
         t_start = time.perf_counter()
-        # with Parallel(n_jobs=thread_count, prefer="processes") as parallel:  # multiprocessing
-        with Parallel(n_jobs=thread_count, prefer="threads", require='sharedmem') as parallel:  # multiprocessing
-            hash_struct[i] = parallel(delayed(calc_dataset_item)(cache, i) for i in range(out_size))
-        c_shm.close()
-        d_shm.close()
-        print (f"elapsed time: {(time.perf_counter() - t_start)/60:.1f} minutes")
+        with Parallel(n_jobs=thread_count, prefer="processes") as parallel:  # multiprocessing
+            hash_struct[i] = parallel(delayed(calc_dataset_item)(seed, i) for i in range(out_size))
+        print ("elapsed time: {(time.perf_counter() - t_start)/60:.1f} minutes")
     else:
         raise Exception(f"out_type of 'cache' or 'dag' expected, '{out_type}' given")
 
@@ -247,9 +180,9 @@ def mkcache(cache_size, seed):
 
     # Sequentially produce the initial dataset
     o = np.empty([n, HASH_BYTES // WORD_BYTES], np.uint32)
-    o[0] = blake3_512(seed)
+    o[0] = sha3_512(seed)
     for i in range(1, n):
-        o[i] = blake3_512(int_list_to_bytes(o[i-1]))
+        o[i] = sha3_512(o[i-1])
     # Use a low-round version of randmemohash
     for _ in range(CACHE_ROUNDS):
         for i in range(n):
@@ -258,7 +191,7 @@ def mkcache(cache_size, seed):
             # sha expects bytes, mapping xor with integers returns
             # a list of 4-byte integers
             o_temp = int_list_to_bytes(list(map(xor, o[(i - 1 + n) % n], o[v])))
-            o[i] = blake3_512(o_temp)
+            o[i] = sha3_512(o_temp)
     return o
 
 
@@ -272,12 +205,12 @@ def calc_dataset_item(cache, i):
     # initialize the mix
     mix = copy.copy(cache[i % n])
     mix[0] ^= i
-    mix = blake3_512(int_list_to_bytes(mix))
+    mix = sha3_512(mix)
     # fnv it with a lot of random cache nodes based on i
     for j in range(DATASET_PARENTS):
         cache_index = fnv(i ^ j, mix[j % r])
         mix = list(map(fnv, mix, cache[cache_index % n]))
-    return blake3_512(int_list_to_bytes(mix))
+    return sha3_512(int_list_to_bytes(mix))
 
 
 def calc_dataset(full_size, cache):
@@ -293,18 +226,14 @@ def calc_dataset(full_size, cache):
         dataset[i] = calc_dataset_item(cache, i)
         if (i / total_size) > percent_done + 0.0001:
             percent_done = i / total_size
-            print(f"\b\b\b\b\b\b{(percent_done * 100):5.2f}%", end="")
+            t_elapsed = time.perf_counter() - t_start
+            print(
+                f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, ETA: {(t_elapsed / percent_done / 60):7.0f}m",
+                end="")
     t_elapsed = time.perf_counter() - t_start
     print("DAG completed in [only!] ", t_elapsed, " seconds!  oWo  so fast")
 
     return dataset
-    
-    
-def calc_dataset_inplace(start, stop, cache, dataset):
-    # generate the dataset
-    for i in range(start, stop):
-        dataset[i] = calc_dataset_item(cache, i)
-    return 
 
 
 # ----- Main Loop -------------------------------------------------------------
@@ -316,7 +245,7 @@ def hashimoto(header, nonce, full_size, dataset_lookup):
     mix_hashes = MIX_BYTES // HASH_BYTES
     # combine header+nonce into a 64 byte seed
     base = str_to_bytes(header) + struct.pack("<Q", nonce)
-    s = blake3_512(base)
+    s = sha3_512(base)
     # start the mix with replicated s
     mix = []
     for _ in range(mix_hashes):
@@ -324,17 +253,18 @@ def hashimoto(header, nonce, full_size, dataset_lookup):
     # mix in random dataset nodes
     for i in range(ACCESSES):
         p = int(fnv(i ^ s[0], mix[i % w]) % (n // mix_hashes) * mix_hashes)
-        newdata = []
+        new_data = []
         for j in range(mix_hashes):
-            newdata.extend(dataset_lookup(p + j))
-        mix = list(map(fnv, mix, newdata))
+            # new_data.extend(dataset_lookup(p + j))
+            new_data.extend(dataset_lookup(p + j))
+        mix = list(map(fnv, mix, new_data))
     # compress mix
     cmix = []
     for i in range(0, len(mix), 4):
         cmix.append(fnv(fnv(fnv(mix[i], mix[i + 1]), mix[i + 2]), mix[i + 3]))
     return {
         "mix digest": serialize_hash(cmix),
-        "result": serialize_hash(blake3_256(s + cmix))
+        "result": serialize_hash(sha3_256(s + cmix))
     }
 
 
@@ -353,8 +283,9 @@ def hashimoto_full(full_size, dataset, header, nonce):
 # mining process.
 
 def get_target(difficulty):
-    # byte strings are little-endian, have to reverse for target comparison
+    # return encode_int(2 ** 256 - difficulty)
     return encode_int(2 ** 256 // difficulty).ljust(32, '\0')[::-1]
+    # return zpad(encode_int(2 ** 256 // difficulty), 64)[::-1]
 
 
 def random_nonce():
@@ -362,101 +293,95 @@ def random_nonce():
 
 
 def mine(full_size, dataset, header, difficulty, nonce):
+    print_interval = 1000  # debug only!
+    nonce_tries = 0  # debug only!
+    t_start = 0  # debug only!
+    print_len = 0  # debug only!
+    new_result = best_hash = get_target(2)  # debug only!
     target = get_target(difficulty)
-    while hashimoto_full(full_size, dataset, header, nonce).get("mix digest") > target:
+    gc.collect()
+    while new_result > target:
         nonce = (nonce + 1) % 2 ** 64
+        if new_result < best_hash:  # debug only!
+            best_hash = new_result  # debug only!
+        new_result = hashimoto_full(full_size, dataset, header, nonce).get("mix digest")
+        nonce_tries += 1  # debug only!
+        if nonce_tries % print_interval == 0:  # debug only!
+            t_stop = time.perf_counter()
+            hashrate = print_interval / (t_stop - t_start)
+            t_start = t_stop
+            for _ in range(print_len):
+                print('\b', end='')
+            print_str = f"hashrate: {hashrate:6.2f} H/s, best hash: {decode_int(best_hash):078d}"
+            print_len = len(print_str)
+            print(print_str, end="")  # debug only!
     return nonce
 
 
-# ------- Real-life Jengascoin miner implementation ---------------------------------
+# must be paired with function in calling program which writes/reads
+# JSON-encoded dictionaries, and handles initialization.
+def miner_file_update(metadata=None, mode='run'):
+    if mode == 'run':
+        if metadata is None:
+            metadata = {
+                'num_hashes':       1000,
+                'update_period':    1.0,  # seconds, float
+                'elapsed_time':     1.0   # seconds, float
+            }
+        hash_ceil = (metadata['num_hashes'] * metadata['update_period']) // metadata['elapsed_time']
+        # create file paths
+        cwd = os.path.dirname(__file__)
+        file_dir = os.path.join(cwd, 'miner_temp')
 
+        if not os.path.exists(file_dir):
+            os.mkdir(file_dir)
+        # write metadata to output file
+        with open(os.path.join(file_dir, 'miner_out'), 'w') as f_out:
+            json.dump(metadata, f_out)
+            f_out.close()
+        # overwrite metadata from input file
+        with open(os.path.join(file_dir, 'miner_in'), 'r') as f_in:
+            f_in.close()
+            metadata = json.load(f_in)
 
-# Jengascoin currently uses subtractive difficulty (not division-scaled)
-def get_target_jh(difficulty):
-    test_target = 2 ** 256 // 30000  # DEBUG AND TEST ONLY!
-    # byte strings are little-endian, have to reverse for target comparison
-    # *************************************************************************
-    return encode_int(test_target - difficulty).ljust(32, '\0')[::-1]  # DEBUG AND TEST ONLY!
-    # *************************************************************************
-    # return encode_int(2 ** 256 - difficulty).ljust(32, '\0')[::-1]
-
-
-def mine_w_update(full_size, dataset, peer_url, miner_info=None, update_period=3.0, frozen=False, metadata=None):
-    if isinstance(metadata, dict):
-        _metadata = metadata
-    else:
-        _metadata = {
-            'hash_ceil': 1000,
-            'elapsed': update_period
+    elif mode == 'init':
+        metadata = {
+            # miner inputs
+            "diff": 2 ** 256,
+            "header": '\xF0' * 32,
+            # miner outputs
+            'num_hashes': 0,
+            'update_period': 1,  # seconds, float
+            'best_hash': get_target(2)
         }
-    if miner_info is None:
-        miner_info = get_miner_input(peer_url, frozen)
-    target = get_target_jh(miner_info['diff_int'])
+        hash_ceil = 1000
+    else:
+        raise Exception(f"mode of [null], 'run' or 'init' expected, '{mode}' given")
 
-    def reset_miner(_update_period, __metadata):
-        print(f"hashrate: {__metadata['hash_ceil']/__metadata['elapsed']:.0f} H/s, block: ",
-              miner_info['block'], ", header: ", miner_info['header_b58'])
-        __metadata.update({
-            'hash_ceil': (__metadata['hash_ceil'] * _update_period) // __metadata['elapsed'],
-            'num_hashes': 0,  # initialization value
-            'best_hash': get_target_jh(1),  # initialization value
-            't_start': time.perf_counter()
-        })
-        return __metadata
-
-    md = reset_miner(update_period, _metadata)
-    nonce = random_nonce()
-
-    while True:
-        while md['num_hashes'] < md['hash_ceil']:
-            out = hashimoto_full(full_size, dataset, miner_info['header'], nonce)
-            if out['mix digest'] < md['best_hash']:
-                if out['mix digest'] < target:
-                    return nonce, out, miner_info['block'], miner_info['header'], md
-                md['best_hash'] = out['mix digest']
-            nonce = (nonce + 1) % 2 ** 64
-            md['num_hashes'] += 1
-        miner_info = get_miner_input(peer_url, _frozen=frozen)
-        if miner_info['new']:
-            md['elapsed'] = time.perf_counter()-md['t_start']
-            md = reset_miner(update_period, md)
-            target = get_target_jh(miner_info['diff_int'])
+    return metadata, hash_ceil
 
 
-def parse_mining_input(miner_in, __frozen=False):
-    miner_input_parsed = {
-        'diff': hex(int(miner_in['difficulty'])),
-        'diff_int': int(miner_in['difficulty']),
-        'header': '0x' + base58.b58decode(miner_in['block']).hex(),  # "block" is actually hash of last block
-        'header_b58': miner_in['block'],
-        'block': miner_in['height'],  # "height" is actually "block" number, for ethash
+# miner returns nonce directly to php call,
+# but will listen in the "miner_in" file for updates from node
+# and will write debug/metadata to miner_out
+# "update_period" is in seconds
+# "mode" takes 'run' or 'init'
+def mine_to_file(full_size, dataset, threads=1):
+    metadata, hash_ceil = miner_file_update(mode='init')
+    n_hashes = 0
+    out = {  # init output
+        "mix digest":   '\xFF' * 32,
+        "result":       '\xFF' * 32
     }
-    if miner_in['old_hdr'] != miner_input_parsed['header']:
-        miner_input_parsed['new'] = True
-    else:
-        miner_input_parsed['new'] = False
-    # *************************************************************************
-    if __frozen:  # DEBUG AND TEST ONLY!
-        miner_input_parsed['block'] = 10 * EPOCH_LENGTH
-    # *************************************************************************
-    return miner_input_parsed
-
-
-def get_miner_input(peer_url, hdr=None, _frozen=False):
-    # pull initial mining info
-    cmd = f"curl -s {urljoin(peer_url, url_path['mine_solo'])}"
-    sp = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
-    info, err = sp.communicate()
-    if json.loads(info)['status'] == 'error':
-        print(f"could not get mining info from {peer_url}")
-        sys.exit(1)
-    miner_in = json.loads(info)['data']
-    if hdr is None:
-        miner_in['old_hdr'] = False
-    else:
-        miner_in['old_hdr'] = hdr
-    # rc = sp.wait()
-    return parse_mining_input(miner_in, __frozen=_frozen)
+    nonce = []
+    for i in range(threads):
+        nonce[i] = random_nonce()
+    target = get_target(metadata.get('diff'))
+    while out.get("mix digest") > target:
+        out = hashimoto_full(full_size, dataset, metadata["header"], nonce)
+        nonce = (nonce + 1) % 2 ** 64
+        n_hashes += 1
+    return nonce
 
 
 # ----- Defining the Seed Hash ------------------------------------------------
@@ -465,11 +390,8 @@ def get_miner_input(peer_url, hdr=None, _frozen=False):
 def get_seedhash(block):
     s = '\x00' * 32
     for i in range(block // EPOCH_LENGTH):
-        s = serialize_hash(blake3_256(s))
+        s = serialize_hash(sha3_256(s))
     return s
-
-
-# ----- Main function ---------------------------------------------------------
 
 
 if __name__ == "__main__":
@@ -480,6 +402,10 @@ if __name__ == "__main__":
     from jh_definitions import *
     import json
     import base58
+
+
+
+# ----- Main function ---------------------------------------------------------
 
 
 
