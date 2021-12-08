@@ -127,7 +127,7 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng', thread_count
                 percent_done = i / row_length + 0.0000001
                 t_elapsed = time.perf_counter() - t_start
                 print(f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, "
-                      f"ETA: {(t_elapsed / percent_done / 60):7.0f}m", end="")
+                      f"ETA: {(t_elapsed * (1/percent_done - 1) / 60):7.0f}m", end="")
 
             for i in range(row_length - (row_length % (thread_count * chunk_len))-1, row_length):
                 hash_struct[i] = calc_dataset_item(cache, i)
@@ -220,8 +220,8 @@ def calc_dataset(full_size, cache):
             percent_done = i / total_size
             t_elapsed = time.perf_counter() - t_start
             print(
-                f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, ETA: {(t_elapsed / percent_done / 60):7.0f}m",
-                end="")
+                f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, "
+                f"ETA: {(t_elapsed * (1/percent_done - 1) / 60):7.0f}m", end="")
     t_elapsed = time.perf_counter() - t_start
     print("DAG completed in [only!] ", t_elapsed, " seconds!  oWo  so fast")
 
