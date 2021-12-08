@@ -36,6 +36,8 @@ from random import randint
 import multiprocessing as mp
 # from blake3 import blake3
 import sha3
+from blake3 import blake3
+from joblib import Parallel, delayed
 import json
 
 from hash_utils import *
@@ -80,52 +82,6 @@ takes:
     out_type: 'cache'|'dag'
     coin: 'jng'|'eth'| 'other_string'
 """
-
-
-# def build_hash_struct(out_size, seed, out_type='cache', coin='eth'):
-    # # find directory and build file name
-    # if out_type == 'cache':
-        # name_temp = int_list_to_bytes(seed)
-    # elif out_type == 'dag':
-        # name_temp = seed[0]
-    # else:
-        # raise Exception(f"out_type of 'cache' or 'dag' expected, '{out_type}' given")
-    # short_name = sha3.keccak_256(name_temp).hexdigest()[0:15]
-    # name = out_type + '_L_' + str(out_size) + "_C_" + short_name + '.npy'
-    # cwd = os.path.dirname(__file__)
-    # file_dir = os.path.join(cwd, f"{coin}_{out_type}_dir")
-    # filepath = os.path.join(file_dir, name)
-
-    # # check for a saved hash structure
-    # if os.path.exists(filepath):
-        # print(f"loading {out_type} for length: ", out_size, " and short_name: ", short_name)
-        # with open(filepath, 'rb') as file:
-            # return np.load(filepath)
-    # print(f"  no saved {out_type} found, generating hash structure\n \
-         # this will take a while... ", end="")
-
-    # # since no saved structure exist, build from scratch
-    # if out_type == 'cache':
-        # # q = mp.Queue()
-        # # p = mp.Process(target=mkcache, args=(out_size, seed))
-        # # p.start()
-        # # hash_struct = q.get()
-        # hash_struct = mkcache(cache_size=out_size, seed=seed)
-    # elif out_type == 'dag':
-        # hash_struct = calc_dataset(full_size=out_size, cache=seed)
-    # else:
-        # raise Exception(f"out_type of 'cache' or 'dag' expected, '{out_type}' given")
-    # # hash_struct = np.array(hash_struct, 'uint32')  # convert to numpy array
-    # # gc.collect()  # attempt to free memory
-
-    # # save newly-generated hash structure
-    # if not os.path.exists(file_dir):
-        # os.mkdir(file_dir)
-    # with open(filepath, 'wb') as name:
-        # print(f"\nsaving {out_type} for length: ", out_size, " and short_name: ", short_name)
-        # np.save(filepath, hash_struct)
-
-    # return hash_struct
     
     
 def build_hash_struct(out_size, seed, out_type='cache', coin='jng', thread_count=1):
@@ -137,28 +93,46 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng', thread_count
     else:
         raise Exception(f"out_type of 'cache' or 'dag' expected, '{out_type}' given")
     short_name = blake3(name_temp).hexdigest(length=16)
-    name = out_type + '_L_' + str(out_size) + "_C_" + short_name + '.npy'
+    row_length = out_size // HASH_BYTES
+    name = out_type + '_L_' + str(row_length) + "_C_" + short_name + '.npy'
     cwd = os.path.dirname(__file__)
     file_dir = os.path.join(cwd, f"{coin}_{out_type}_dir")
     filepath = os.path.join(file_dir, name)
 
     # check for a saved hash structure
     if os.path.exists(filepath):
-        print(f"loading {out_type} for length: ", out_size, " and short_name: ", short_name)
+        print(f"loading {out_type} for length: ", row_length, " and short_name: ", short_name)
         with open(filepath, 'rb') as file:
             return np.load(filepath)
     print(f"  no saved {out_type} found, generating hash structure\n \
          this will take a while... ", end="")
 
-    # since no saved structure exist, build from scratch
+    # since no saved structure exists, build from scratch
     if out_type == 'cache':
         hash_struct = mkcache(cache_size=out_size, seed=seed)
     elif out_type == 'dag':
-        hash_struct = np.empty([out_size // HASH_BYTES, HASH_BYTES // WORD_BYTES], np.uint32)
-        t_start = time.perf_counter()
-        with Parallel(n_jobs=thread_count, prefer="processes") as parallel:  # multiprocessing
-            hash_struct[i] = parallel(delayed(calc_dataset_item)(seed, i) for i in range(out_size))
-        print ("elapsed time: {(time.perf_counter() - t_start)/60:.1f} minutes")
+        hash_struct = np.empty([row_length, HASH_BYTES // WORD_BYTES], np.uint32)
+        chunk_len = 1024
+
+        with Parallel(n_jobs=thread_count) as parallel:  # multiprocessing
+            percent_done = 0
+            t_start = time.perf_counter()
+            for i in range(0, row_length, thread_count*chunk_len):
+                temp = np.asarray(parallel(delayed(calc_dataset_chunk)(seed, j, chunk_len)
+                                           for j in range(i, i+thread_count*chunk_len, chunk_len)))
+                for j in range(len(temp)):
+                    for k in range(len(temp[j])):
+                        hash_struct[i+(j*chunk_len)+k] = temp[j, k]
+
+                percent_done = i / row_length + 0.0000001
+                t_elapsed = time.perf_counter() - t_start
+                print(f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, "
+                      f"ETA: {(t_elapsed / percent_done / 60):7.0f}m", end="")
+
+            for i in range(row_length - (row_length % (thread_count * chunk_len))-1, row_length):
+                hash_struct[i] = calc_dataset_item(cache, i)
+
+        print(f"elapsed time: {(time.perf_counter() - t_start)/60:.1f} minutes")
     else:
         raise Exception(f"out_type of 'cache' or 'dag' expected, '{out_type}' given")
 
@@ -166,7 +140,7 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng', thread_count
     if not os.path.exists(file_dir):
         os.mkdir(file_dir)
     with open(filepath, 'wb') as name:
-        print(f"\nsaving {out_type} for length: ", out_size, " and short_name: ", short_name)
+        print(f"\nsaving {out_type} for length: ", row_length, " and short_name: ", short_name)
         np.save(filepath, hash_struct)
 
     return hash_struct
@@ -198,6 +172,24 @@ def mkcache(cache_size, seed):
 # ----- Full dataset calculation ----------------------------------------------
 
 
+def calc_dataset_chunk(cache, i_start, chunk_len=1):
+    n = len(cache)
+    r = HASH_BYTES // WORD_BYTES
+    i_start = int(i_start)
+    o = np.empty([chunk_len, 16], dtype=np.uint32)
+    # initialize the mix
+    for i in range(chunk_len):
+        mix = copy.copy(cache[(i+i_start) % n])
+        mix[0] ^= i
+        mix = sha3_512(mix)
+        # fnv it with a lot of random cache nodes based on i
+        for j in range(DATASET_PARENTS):
+            cache_index = fnv((i+i_start) ^ j, mix[j % r])
+            mix = list(map(fnv, mix, cache[cache_index % n]))
+        o[i] = sha3_512(mix)
+    return o
+
+
 def calc_dataset_item(cache, i):
     n = len(cache)
     r = HASH_BYTES // WORD_BYTES
@@ -210,7 +202,7 @@ def calc_dataset_item(cache, i):
     for j in range(DATASET_PARENTS):
         cache_index = fnv(i ^ j, mix[j % r])
         mix = list(map(fnv, mix, cache[cache_index % n]))
-    return sha3_512(int_list_to_bytes(mix))
+    return sha3_512(mix)
 
 
 def calc_dataset(full_size, cache):

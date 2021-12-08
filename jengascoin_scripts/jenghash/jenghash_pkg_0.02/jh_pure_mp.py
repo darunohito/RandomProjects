@@ -232,25 +232,6 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng', thread_count
             for i in range(row_length - (row_length % (thread_count * chunk_len))-1, row_length):
                 hash_struct[i] = calc_dataset_item(cache, i)
 
-        # with Parallel(n_jobs=thread_count) as parallel:  # multiprocessing
-        #     percent_done = 0
-        #     t_start = time.perf_counter()
-        #     for i in range(0, row_length, thread_count):
-        #         temp = parallel(delayed(calc_dataset_item)(seed, j) for j in range(i, i+thread_count))
-        #         for k in range(len(temp)):
-        #             hash_struct[i+k] = temp[k]
-        #
-        #         if (i / row_length) > percent_done + 0.0001:
-        #             percent_done = i / row_length
-        #             t_elapsed = time.perf_counter() - t_start
-        #             print(f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, "
-        #                   f"ETA: {(t_elapsed / percent_done / 60):7.0f}m", end="")
-        #
-        #     for i in range(row_length - (row_length % thread_count), row_length):
-        #         hash_struct[i] = calc_dataset_item(cache, i)
-
-        # c_shm.close()
-        # d_shm.close()
         print(f"elapsed time: {(time.perf_counter() - t_start)/60:.1f} minutes")
     else:
         raise Exception(f"out_type of 'cache' or 'dag' expected, '{out_type}' given")
