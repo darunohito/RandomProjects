@@ -535,7 +535,6 @@ def peer_request(peer_url, command_string, method='get', params_dict=None):
 
 if __name__ == "__main__":
     import sys
-    from jh_definitions import *
     import base58
 
     # example call:
