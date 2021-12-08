@@ -1,0 +1,131 @@
+{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang1033{\fonttbl{\f0\fnil\fcharset0 Meiryo;}{\f1\fnil\fcharset0 MS Mincho;}{\f2\fnil\fcharset2 Symbol;}}
+{\colortbl ;\red0\green255\blue0;\red255\green255\blue0;\red0\green0\blue255;}
+{\*\generator Riched20 10.0.19041}\viewkind4\uc1 
+\pard\sl240\slmult1\b\f0\fs24\lang17 Thoughts on the development of Jengascoin\par
+
+\pard{\pntext\f2\'B7\tab}{\*\pn\pnlvlblt\pnf2\pnindent0{\pntxtb\'B7}}\fi-360\li720\sl240\slmult1\b0\i\fs22 Outline\i0\par
+{\pntext\f2\'B7\tab}\i Short-term design, deliverables & stretch goals\i0\par
+{\pntext\f2\'B7\tab}\i Complete design brief\i0\par
+
+\pard\sl240\slmult1\b\fs24\par
+
+\pard\sl240\slmult1\fs20 Outline:\par
+\b0\i\tab It is of high importance that mainnet is launched soon, in order to give the dev team a break and get the concept on the market before anyone else. \i0\par
+\tab -Net (paraphrased)\par
+\tab\par
+\tab I entirely agree with Netsparkle's goals and rough timeline. I want to mesh my work with the commercial goals of this coin. To that end, I have slightly modified the long-term design \b to ensure that all short-term modifications are already verifiably secure\b0 . This is not because they are simple; it is due to the fact that they are either mildly-modified or entirely-vanilla distributions of well-known blockchain algorithms.\par
+\tab Net & PF made it clear when I joined the project that they both hoped we could improve the hashing algorithm in the following ways:\par
+
+\pard{\pntext\f2\'B7\tab}{\*\pn\pnlvlblt\pnf2\pnindent0{\pntxtb\'B7}}\fi-360\li720\sl240\slmult1 reduce energy consumption\b\par
+{\pntext\f2\'B7\tab}\b0 improve ASIC-hardness\b\par
+{\pntext\f2\'B7\tab}\b0 casual-miner friendly\b\par
+
+\pard\sl240\slmult1\tab\b0 I believe that Jengascoin can launch with the last two items implemented, tested, & verified in a very short timeframe. \par
+\par
+\b\par
+Short-term design, deliverables & stretch goals:\par
+\tab\b0 The foundational pieces of this algorithm have slightly changed, given the feedback from the team members and my own research. The primary pieces are as follows, with time estimates given as a total between all parties:\par
+
+\pard{\pntext\f2\'B7\tab}{\*\pn\pnlvlblt\pnf2\pnindent0{\pntxtb\'B7}}\fi-360\li720\sl240\slmult1 Blake3 algo [\highlight1 done\highlight0 ]\b\par
+{\pntext\f2\'B7\tab}\b0 Node & Wallet[~\highlight2 80-90\highlight0 %?, unknown eta]\b\par
+{\pntext\f2\'B7\tab}\b0 Reward function "anti-premining" update [\highlight2 50\highlight0 %, est. 2 hours of dev]\b\par
+{\pntext\f2\'B7\tab}\b0 J-Ethash dagger-builder [\highlight2 95\highlight0 %, est. 1 hour of dev]\b\par
+{\pntext\f2\'B7\tab}\b0 J-Ethash miner [~\highlight2 90\highlight0 %, est. 3 hours of dev]\b\par
+{\pntext\f2\'B7\tab}\b0 J-Ethash verifier [~\highlight2 70\highlight0 %, est. 8 hours of dev] \b\par
+
+\pard\sl240\slmult1\fs22\par
+\ul\b0\fs20 (Daru's) Deliverables\ulnone\b\par
+\b0 21.12.9 (Thursday):\par
+\tab rollout of J-Ethash miner & verifier on devnet \b (Daru & PF)\par
+\b0\tab modified reward function rollout on devnet \b (Daru & Net)\par
+\b0 21.12.10 (Friday):\par
+\tab Finish evaluation of RandomX, report back on feasibility and usefulness. \b (Daru)\b0\par
+21.12.13 (Monday): \par
+\tab Determine whether short-term dev work on RandomX is worth it/feasible. (long-term should be kept on the table) \b (Daru)\b0\par
+21.12.17 (Friday):\par
+\tab Complete early debugging of J-Ethash mining/verifier, build user-friendly package. Rollout to testnet.\b  (Daru & PF)\par
+\b0 21.12.23 (Thursday):\par
+\tab J-Ethash testnet is solid. \par
+21.12.31 (Friday):\par
+\tab Finishing touches on reward function according to complete\b\par
+\par
+\fs22 *******************************************************\par
+\fs20\tab\b0 The last piece, RandomX, is not fully evaluated yet, and I will work to completely flesh it out by Friday evening. It is a uniquely ASIC-resistant algorithm in a way that Ethash does not compare to. In fact, it is even considered GPU-resistant, as all of the acceleration elements on modern GPUs cannot perform the "hash" for RandomX as efficiently as x86 CPUs. From the documentation: \par
+
+\pard\li720\sl240\slmult1\i "The VM executes programs in a special instruction set, which was designed in such way that any random 8-byte word is a valid instruction and any sequence of valid instructions is a valid program. Because there are no 'syntax' rules, generating a random program is as easy as filling the program buffer with random data."\par
+\i0\par
+
+\pard\sl240\slmult1\tab Read here for a detailed description of the algo: {{\field{\*\fldinst{HYPERLINK https://github.com/tevador/RandomX/blob/master/doc/specs.md }}{\fldrslt{https://github.com/tevador/RandomX/blob/master/doc/specs.md\ul0\cf0}}}}\f0\fs20\par
+\tab It is a significantly more complex algorithm, and the reference implementation runs a VM in memory to actually perform the operations (I'm assuming this was for performance purposes---not simplicity). Oddly, the datastructure used to feed the "random data" input to the algorithm is extremely similar to the Ethash's Dagger, and is built with their "SuperscalarHash" function.\par
+\tab Where Ethash was around a 100x upgrade over Bitcoin's SHA256 algo in terms of ASIC-hardness, I believe RandomX to be around a 3-10x improvement on top of that, even eating into GPU performance due to the CISC requirements of the algorithm. The similarities to Ethash make it much simpler for me to understand the principles of the algorithm. It is not a necessary addition at this time, but would be a stretch goal, which may be acheivable depending on the current status of the Node & Wallet backends\par
+\b\fs22 *******************************************************\par
+\b0\fs20\par
+\b Complete Design Brief:\par
+\tab\b0 While we have discussed at length many of the details, the design has been constantly evolving to address the concerns which arose over time. This will be an extremely brief overview of the final design vision. In-depth information will be available in my next whitepaper draft.\par
+\par
+\b\fs22 *******************************************************\b0\fs20\par
+\fs22\par
+\i\fs24 Gamification of Cryptocurrency Mining\par
+\fs20\par
+\ul\i0 Principle:\ulnone\par
+\tab Make cryptocurrency good for the planet and good for people.\i\par
+\par
+\ul\i0 Cryptographic structures:\par
+
+\pard\sl240\slmult1\ulnone\b sha3-style hashing algorithm \b0\par
+(i.e. Blake3, Keccak)\par
+\tab\b Adjustments\b0 : \par
+
+\pard{\pntext\f2\'B7\tab}{\*\pn\pnlvlblt\pnf2\pnindent0{\pntxtb\'B7}}\fi-360\li1080\sl240\slmult1 none\par
+
+\pard\sl240\slmult1\b memory-hard (size & bandwidth) hashing algorithm \b0\par
+(i.e. Ethash, RandomX)\par
+\tab\b Adjustments\b0 : \par
+
+\pard{\pntext\f2\'B7\tab}{\*\pn\pnlvlblt\pnf2\pnindent0{\pntxtb\'B7}}\fi-360\li1080\sl240\slmult1 Multiple acceptable dataset sizes\par
+{\pntext\f2\'B7\tab}New random seed for every epoch\par
+{\pntext\f2\'B7\tab}50% address-specific, 50% size-specific datasets\par
+{\pntext\f2\'B7\tab}Scaled DATASET_PARENTS & ACCESSES based on dataset size\par
+
+\pard\sl240\slmult1\b verifiable delay function [vdf] \par
+\b0 (i.e. Modular Exponentiation [ModX], Supersingular Isogenies)\par
+\tab\b Adjustments\b0 :\par
+
+\pard{\pntext\f2\'B7\tab}{\*\pn\pnlvlblt\pnf2\pnindent0{\pntxtb\'B7}}\fi-360\li1080\sl240\slmult1 (for ModX) use the "size-specific" hashing dataset as an interstitial convolution between modular exponent evaluations\par
+
+\pard\sl240\slmult1\par
+\ul Game structures:\par
+\ulnone\tab Miner types:\ul\par
+
+\pard{\pntext\f2\'B7\tab}{\*\pn\pnlvlblt\pnf2\pnindent0{\pntxtb\'B7}}\fi-360\li1080\sl240\slmult1\ulnone Guilds \fs16 (structured mining pools who use manual pooling methodbuilt-in to new Wallet)\fs20\par
+
+\pard{\pntext\f2\'B7\tab}{\*\pn\pnlvlblt\pnf2\pnindent0{\pntxtb\'B7}}\fi-360\li1080\sl240\slmult1 Mercs\fs16  (solo miners who use random pooling method built-in to new Wallet)\fs20\par
+{\pntext\f2\'B7\tab}etc. \fs16 (other groups can be added for fun, but not strictly necessary)\fs20\par
+
+\pard\sl240\slmult1\tab Scorekeeping:\par
+\tab\par
+
+\pard\sl240\slmult1\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+\par
+\f1\par
+}
+ 
