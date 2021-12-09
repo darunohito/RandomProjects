@@ -122,7 +122,9 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng', thread_count
                                            for j in range(i, i+thread_count*chunk_len, chunk_len)))
                 for j in range(len(temp)):
                     for k in range(len(temp[j])):
-                        hash_struct[i+(j*chunk_len)+k] = temp[j, k]
+                        if i+(j*chunk_len)+k < len(hash_struct):  # to keep from writing out of bounds
+                            hash_struct[i+(j*chunk_len)+k] = temp[j, k]
+                # IndexError: index 63832022 is out of bounds for axis 0 with size 63832022
 
                 percent_done = i / row_length + 0.0000001
                 t_elapsed = time.perf_counter() - t_start
