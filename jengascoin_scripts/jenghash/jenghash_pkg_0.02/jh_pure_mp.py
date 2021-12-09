@@ -208,16 +208,17 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng', thread_count
         chunk_len = 1024
 
         with Parallel(n_jobs=thread_count) as parallel:  # multiprocessing
-            percent_done = 0
             t_start = time.perf_counter()
             for i in range(0, row_length, thread_count*chunk_len):
                 temp = np.asarray(parallel(delayed(calc_dataset_chunk)(seed, j, chunk_len)
                                            for j in range(i, i+thread_count*chunk_len, chunk_len)))
                 for j in range(len(temp)):
                     for k in range(len(temp[j])):
-                        hash_struct[i+(j*chunk_len)+k] = temp[j, k]
+                        if i + (j * chunk_len) + k < len(hash_struct):  # to keep from writing out of bounds
+                            hash_struct[i + (j * chunk_len) + k] = temp[j, k]
+                # IndexError: index 63832022 is out of bounds for axis 0 with size 63832022
 
-                percent_done = i / row_length + 0.0000001
+                percent_done = (i + chunk_len) / row_length
                 t_elapsed = time.perf_counter() - t_start
                 print(f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, "
                       f"ETA: {(t_elapsed / percent_done / 60):7.0f}m", end="")

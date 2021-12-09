@@ -2,6 +2,7 @@ from ethash_py3_np_mp import *
 import sys
 # ----- Main function ---------------------------------------------------------
 
+
 # example call:
 # python3 ethash_py3_np_mp_single.py 359
 # 0x667c94657d5b6922693e2e6ac77b80861b80ff949c795ef4b18551e8c389a2f1 0x710a38013066d8ce 6
