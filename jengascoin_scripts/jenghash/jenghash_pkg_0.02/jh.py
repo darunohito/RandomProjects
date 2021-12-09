@@ -100,28 +100,34 @@ class Miner:
         self.dagSize = dagSize
         
         self.link = Link(peerUrl)
+        self.block = link.get_miner_input(
+        
+        self.smith = Smith(
         self.miner_input = link.
         self.seeds = get_seedset
         self.cache = mkcache(get_cache_size(, seed=seed)
     
 
 class Link:
-    def __init__(self, url):
+    
+
+    def __init__(self, url, hdr=None):
         self.url = url
-
-
-    def get_miner_input(peer_url, hdr=None, _frozen=False):
-        info = peer_request(peer_url, url_path['mine_solo'])
+        self.hdr = hdr
+        self.chainState = self.get_miner_input(
+    
+    
+    def get_miner_input(url=self.url, header=self.hdr):
+        info = self.peer_request(url, url_path['mine_solo'])
         miner_in = info['data']
-        if hdr is None:
+        if header is None:
             miner_in['old_hdr'] = False
         else:
-            miner_in['old_hdr'] = hdr
-        # rc = sp.wait()
-        return parse_mining_input(miner_in, __frozen=_frozen)
+            miner_in['old_hdr'] = header
+        return parse_mining_input(miner_in)
         
         
-    def parse_mining_input(miner_in, __frozen=False):
+    def parse_mining_input(miner_in):
         miner_input_parsed = {
             'diff': hex(int(miner_in['difficulty'])),
             'diff_int': int(miner_in['difficulty']),
@@ -133,12 +139,11 @@ class Link:
             miner_input_parsed['new'] = True
         else:
             miner_input_parsed['new'] = False
-
         # print("miner_input_parsed: ", miner_input_parsed)
         return miner_input_parsed
 
 
-    def get_peer_block(peer_url, block_height):
+    def get_peer_block(self.url, block_height):
         # height_param = f"&height={block_height}"
         height_param = {'height': block_height}
         return peer_request(peer_url, url_path['get_block'], params_dict=height_param)
