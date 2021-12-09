@@ -1,27 +1,17 @@
-#!/usr/bin/python2.7
+#!/usr/bin/python3.10
+
+# Jengascoin/Ethash mining algorithm
 
 #
-# https://eth.wiki/en/concepts/ethash/ethash
-#
-# This one points out some issues, but gets several things wrong, too:
-# https://github.com/lukovkin/ethash
-#
-# The issues found in the lokovkin version:
-#
-# - The encode_int(nonce) does not produce the expected byte string of fixed
-#   length 8. Our solution using "struct" should be better.
-#
-# - Target non-reversal is incorrect, given that we perform a string
-#   comparison, which is big-endian.
+# Requires:
+#  python3
+#  blake3
+#  base58
+#  requests
+#  joblib
+#  numpy
 #
 
-#
-# Requires
-# python-pysha3
-#
-# Note: the Keccak hashes are called keccak_*, not sha3_*
-# See also: https://pypi.org/project/pysha3/
-#
 
 import copy
 import os
