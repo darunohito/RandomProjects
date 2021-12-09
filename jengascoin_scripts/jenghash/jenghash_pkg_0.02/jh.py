@@ -100,7 +100,7 @@ class Miner:
         self.dagSize = dagSize
         
         self.link = Link(peerUrl)
-        self.block = link.get_miner_input(
+        self.input = link.get_miner_input(
         
         self.smith = Smith(
         self.miner_input = link.
@@ -273,59 +273,59 @@ class Smith:
 # ----- Full dataset calculation ----------------------------------------------
 
 
-def calc_dataset_chunk(cache, i_start, chunk_len=1):
-    n = len(cache)
-    r = HASH_BYTES // WORD_BYTES
-    i_start = int(i_start)
-    o = np.empty([chunk_len, 16], dtype=np.uint32)
-    # initialize the mix
-    for i in range(chunk_len):
-        mix = copy.copy(cache[(i+i_start) % n])
+    def calc_dataset_chunk(cache, i_start, chunk_len=1):
+        n = len(cache)
+        r = HASH_BYTES // WORD_BYTES
+        i_start = int(i_start)
+        o = np.empty([chunk_len, 16], dtype=np.uint32)
+        # initialize the mix
+        for i in range(chunk_len):
+            mix = copy.copy(cache[(i+i_start) % n])
+            mix[0] ^= i
+            mix = blake3_512(int_list_to_bytes(mix))
+            # fnv it with a lot of random cache nodes based on i
+            for j in range(DATASET_PARENTS):
+                cache_index = fnv((i+i_start) ^ j, mix[j % r])
+                mix = list(map(fnv, mix, cache[cache_index % n]))
+            o[i] = blake3_512(int_list_to_bytes(mix))
+        return o
+
+
+    def calc_dataset_item(cache, i):
+        n = len(cache)
+        r = HASH_BYTES // WORD_BYTES
+        i = int(i)
+        # initialize the mix
+        mix = copy.copy(cache[i % n])
         mix[0] ^= i
         mix = blake3_512(int_list_to_bytes(mix))
         # fnv it with a lot of random cache nodes based on i
         for j in range(DATASET_PARENTS):
-            cache_index = fnv((i+i_start) ^ j, mix[j % r])
+            cache_index = fnv(i ^ j, mix[j % r])
             mix = list(map(fnv, mix, cache[cache_index % n]))
-        o[i] = blake3_512(int_list_to_bytes(mix))
-    return o
+        return blake3_512(int_list_to_bytes(mix))
 
 
-def calc_dataset_item(cache, i):
-    n = len(cache)
-    r = HASH_BYTES // WORD_BYTES
-    i = int(i)
-    # initialize the mix
-    mix = copy.copy(cache[i % n])
-    mix[0] ^= i
-    mix = blake3_512(int_list_to_bytes(mix))
-    # fnv it with a lot of random cache nodes based on i
-    for j in range(DATASET_PARENTS):
-        cache_index = fnv(i ^ j, mix[j % r])
-        mix = list(map(fnv, mix, cache[cache_index % n]))
-    return blake3_512(int_list_to_bytes(mix))
-
-
-def calc_dataset(full_size, cache):
-    # generate the dataset
-    t_start = time.perf_counter()
-    # dataset = []
-    percent_done = 0
-    total_size = full_size // HASH_BYTES
-    dataset = np.empty([total_size, HASH_BYTES // WORD_BYTES], np.uint32)
-    print("percent done:       ", end="")
-    for i in range(total_size):
-        # dataset.append(calc_dataset_item(cache, i))
-        dataset[i] = calc_dataset_item(cache, i)
-        if (i / total_size) > percent_done + 0.0001:
-            percent_done = i / total_size
-            t_elapsed = time.perf_counter() - t_start
-            print(
-                f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, "
-                f"ETA: {(t_elapsed * (1/percent_done - 1) / 60):7.0f}m", end="")
-    t_elapsed = time.perf_counter() - t_start
-    print("DAG completed in [only!] ", t_elapsed, " seconds!  oWo  so fast")
-    return dataset
+    def calc_dataset(full_size, cache):
+        # generate the dataset
+        t_start = time.perf_counter()
+        # dataset = []
+        percent_done = 0
+        total_size = full_size // HASH_BYTES
+        dataset = np.empty([total_size, HASH_BYTES // WORD_BYTES], np.uint32)
+        print("percent done:       ", end="")
+        for i in range(total_size):
+            # dataset.append(calc_dataset_item(cache, i))
+            dataset[i] = calc_dataset_item(cache, i)
+            if (i / total_size) > percent_done + 0.0001:
+                percent_done = i / total_size
+                t_elapsed = time.perf_counter() - t_start
+                print(
+                    f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, "
+                    f"ETA: {(t_elapsed * (1/percent_done - 1) / 60):7.0f}m", end="")
+        t_elapsed = time.perf_counter() - t_start
+        print("DAG completed in [only!] ", t_elapsed, " seconds!  oWo  so fast")
+        return dataset
 
 
 # ----- Main Loop -------------------------------------------------------------
