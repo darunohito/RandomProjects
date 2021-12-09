@@ -10,7 +10,10 @@ else:
 
 print("********** Running Jenghash Unit Tests **********\n\n")
 
+
 # Peer communication tests, defaults to peer1
+
+
 print("~~~~~~~~~~     Peer Communication      ~~~~~~~~~~\n")
 print("Get Peer Block test:")
 result = get_peer_block(peer, 100)
@@ -31,12 +34,32 @@ submission_dictionary = {
     'private_key': 'privkey'
 }
 result = submit_solution(peer, submission_dictionary)
-print(f"status: {result['status']}\nnonce accepted?: {result['data']}\n")
+print(f"status: {result['status']}\nnonce accepted?: {result['data']}\n\n")
 assert result['data'] == 'rejected'
+print("Peer Communication tests passed!")
 
 
-print("\n\n")
+
+# Cache and Dataset Generation tests, very small dataset
 print("~~~~~~~~~~ Cache and Dataset Generation ~~~~~~~~~~\n")
+
+seed1 = get_seedhash(0)
+seeds = get_seedset(0)
+seed2 = seeds['front_hash']
+print("Seedset 0: \n", seeds)
+assert seed1 == seed2
+
+smth = Smith()
+cache1 = smth.mkcache(get_cache_size(1, tiny=True), seed1)
+cache2 = smth.build_hash_struct(get_cache_size(1, tiny=True), seed1)
+c1b = blake3(cache1).digest()
+c2b = blake3(cache2).digest()
+print("cache1 blakehash: ", c1b)
+print("cache2 blakehash: ", c2b)
+assert c1b == c2b
+
+
+
 
 
 

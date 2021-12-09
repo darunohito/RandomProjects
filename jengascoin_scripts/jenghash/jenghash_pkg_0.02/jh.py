@@ -56,10 +56,10 @@ ACCESSES = 64  # number of accesses in hashimoto loop
 JENESIS = 'Satoshi is a steely-eyed missile man'
 MAX_CHAIN_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
 
-url_path = {
-    'mine_solo':        '/api.php?q=getMiningInfo',
-    'submit_solo':      '/api.php?q=submitNonce',
-    'get_block':       '/api.php?q=getBlock'  # =integer
+URL_PATH = {
+    'MINE_SOLO':        '/api.php?q=getMiningInfo',
+    'SUBMIT_SOLO':      '/api.php?q=submitNonce',
+    'GET_BLOCK':       '/api.php?q=getBlock'  # =integer
 }
 
 
@@ -72,13 +72,13 @@ if __name__ == "__main__":
     # example call:
     # python3 jh.py http://peer1.jengas.io/ <public-key> <private-key>
     if len(sys.argv) < 4 or len(sys.argv) > 6:
-        print(sys.stderr, "usage: python3", sys.argv[0], "<peer-URL>", "<public-key>", "<private-key>", "(opt)threads", "(opt)freeze")
+        print(sys.stderr, "usage: python3", sys.argv[0], "<peer-URL>", "<public-key>", "<private-key>", "(opt)cores", "(opt)freeze")
         sys.exit(1)
     peer = sys.argv[1]
 
-    threads = 1
+    cores = 1
     if len(sys.argv) > 4:
-        threads = int(sys.argv[4])
+        cores = int(sys.argv[4])
     freeze = False
     freeze_block = 300000
     if len(sys.argv) == 6:
@@ -90,166 +90,114 @@ if __name__ == "__main__":
 # ----- Classes ---------------------------------------------------------------
 
 
-class Verifier:
+class Verifier:  # high-level class
 
 
-class Miner:
-     def __init__(self, peerUrl, pubKey, priKey, dagSize, cores):
+    # must be initialized with either local chainState dictionary or peer_url
+    def __init__(self, size_max, cores, chainState=None, peerUrl=None):
+        self.size_max = size_max
+        # init ultralight verifier lnk (link only useful for dev)
+        if isinstance(peerUrl, str):  # if ultralight verifier
+            self.lnk = Link(peerUrl)  # check status of peer chain
+            self.input = lnk.chainState  # copy to local mining info
+            print("Initial Peer Chain State: \n", self.input)
+        self.target = get_target(self.input['diff_int'])
+        # init verifier smth
+        self.smth = Smith(lnk, size_max, pubKey, cores)
+        self.seeds = get_seedset(input['height'])
+        # build cache for current epoch
+        smth.cache = smth.build_hash_struct(smth.cacheSize, deserialize_hash(seeds['back_hash']))
+    
+    
+    # ultralight verifier lnk update (link only useful for dev)
+    def peer_update():
+        self.input = lnk.get_miner_input()
+    
+    
+    def verify(cmix, s_cmix_hash, nonce, size_coeff, header, diff):
+        if header != self.input['header']:
+            return False  # DDoS protection layer 1
+            self.target = get_target(diff)
+        elif cmix > self.target:
+            return False  # layer 2
+        res = serialize_hash(blake3_256(blake3_512(str_to_bytes(self.input['header']) + struct.pack("<Q", nonce)) + cmix))
+        if res != s_cmix_hash:
+            return False  # layer 3
+        elif hashimoto_light(smth.get_full_size(size_coeff), self.cache, self.header, nonce)['mix digest'] < self.target:
+            return True  # actual nonce check
+        else:
+            return False
+        
+
+class Miner:  # high-level class
+
+    def __init__(self, peerUrl, pubKey, priKey, size_coeff, cores):
+        # init static vars
         self.pubKey = pubKey
         self.priKey = priKey
-        self.dagSize = dagSize
-        
-        self.link = Link(peerUrl)
-        self.input = link.get_miner_input(
-        
-        self.smith = Smith(
-        self.miner_input = link.
-        self.seeds = get_seedset
-        self.cache = mkcache(get_cache_size(, seed=seed)
-    
+        self.size_coeff = size_coeff
+        # init miner lnk
+        self.lnk = Link(peerUrl)
+        self.input = lnk.chainState
+        self.target = get_target(self.input['diff'], int(MAX_CHAIN_TARGET))
+        # init miner smth
+        self.smth = Smith(lnk, size_coeff, pubKey, cores)
+        self.seeds = get_seedset(input['height'])
+        # build cache and dagger for current epoch
+        smth.cache = smth.build_hash_struct(smth.cacheSize, deserialize_hash(seeds['back_hash']))
+        smth.dagger = smth.build_hash_struct(smth.dagSize, smth.cache, 'dag', cores)
 
-class Link:
-    
 
-    def __init__(self, url, hdr=None):
-        self.url = url
-        self.hdr = hdr
-        self.chainState = self.get_miner_input(
-    
-    
-    def get_miner_input(url=self.url, header=self.hdr):
-        info = self.peer_request(url, url_path['mine_solo'])
-        miner_in = info['data']
-        if header is None:
-            miner_in['old_hdr'] = False
+    def random_nonce():
+        return randint(0, 2 ** 64)
+
+
+    def mine(full_size, dataset, header, difficulty, nonce):
+        target = get_target(difficulty)
+        while hashimoto_full(full_size, dataset, header, nonce).get("mix digest") > target:
+            nonce = (nonce + 1) % 2 ** 64
+        return nonce
+            
+
+class Smith:  # low-level class
+
+    def __init__(self, lnk, size_coeff, pubkey, cores):
+        self.lnk = lnk
+        self.cacheSize = size_coeff * CACHE_BYTES_INIT
+        self.dagSize = size_coeff * DATASET_BYTES_INIT
+        self.pubKey = pubKey
+        self.cores = cores
+        
+        self.cache = None
+        self.dagger = None
+
+    # for jengascoin use, set size_coeff=<dataset_size> [in integer *Gibibytes*]
+    def get_cache_size(size_coeff=1, tiny=False):    
+        if isinstance(size_coeff, int):
+            sz = CACHE_BYTES_INIT * size_coeff
         else:
-            miner_in['old_hdr'] = header
-        return parse_mining_input(miner_in)
-        
-        
-    def parse_mining_input(miner_in):
-        miner_input_parsed = {
-            'diff': hex(int(miner_in['difficulty'])),
-            'diff_int': int(miner_in['difficulty']),
-            'header': '0x' + base58.b58decode(miner_in['block']).hex(),  # "block" is actually hash of last block
-            'header_b58': miner_in['block'],
-            'block': miner_in['height'],  # "height" is actually "block" number, for ethash
-        }
-        if miner_in['old_hdr'] != miner_input_parsed['header']:
-            miner_input_parsed['new'] = True
-        else:
-            miner_input_parsed['new'] = False
-        # print("miner_input_parsed: ", miner_input_parsed)
-        return miner_input_parsed
-
-
-    def get_peer_block(self.url, block_height):
-        # height_param = f"&height={block_height}"
-        height_param = {'height': block_height}
-        return peer_request(peer_url, url_path['get_block'], params_dict=height_param)
-
-
-    # ----- TESTNET ONLY ----- #
-    def submit_solution(peer_url, submission_dict):
-        return peer_request(peer_url, url_path['submit_solo'], method='post', params_dict=submission_dict)
-    # ----- TESTNET ONLY ----- #
-
-
-    # params_dict example: {'nonce': 1234, 'public_address': 'J2034'}
-    def peer_request(peer_url, command_string, method='get', params_dict=None):
-        if method == 'get':
-            if isinstance(params_dict, dict):
-                for k, v in params_dict.items():
-                    # format:  "&public_key=key"
-                    command_string += f"&{str(k)}={str(v)}"
-            print(urljoin(peer_url, command_string))
-            r = requests.get(urljoin(peer_url, command_string))
-        if method == 'post':
-            print(urljoin(peer_url, command_string))
-            r = requests.post(urljoin(peer_url, command_string), data=params_dict)
-        json_out = r.json()
-        if json_out['status'] == 'error':
-            print(json_out['data'])
-            # sys.exit(1)
-        return json_out
-
-class Smith:
-
-
-    # for jengascoin use, set size=<dataset_size> [in integer *Gibibytes*]
-    def get_cache_size(size=1):    
-        if isinstance(size, int):
-            sz = CACHE_BYTES_INIT * size
-        else:
-            raise Exception(f"invalid cache 'size' parameter {size}")
+            raise Exception(f"invalid cache 'size_coeff' parameter {size_coeff}")
+        if tiny:
+            sz = sz // 100
         while not isprime(sz / HASH_BYTES):
             sz -= 2 * HASH_BYTES
         return sz
+        
+        
+    # size_coeff=<target_size> [in *Gibibytes*]
+    def get_full_size(size_coeff=1, tiny=False):
+        if isinstance(size_coeff, int):
+            sz = DATASET_BYTES_INIT * size_coeff
+        else:
+            raise Exception(f"invalid cache 'size_coeff' parameter {size_coeff}")
+        if tiny:
+            sz = sz // 100
+        while not isprime(sz / MIX_BYTES):
+            sz -= 2 * MIX_BYTES
+        return sz
     
-        
-    def build_hash_struct(out_size, seed, out_type='cache', coin='jng', thread_count=1):
-        # find directory and build file name
-        if out_type == 'cache':
-            name_temp = int_list_to_bytes(seed)
-        elif out_type == 'dag':
-            name_temp = int_list_to_bytes(seed[0])
-        else:
-            raise Exception(f"out_type of 'cache' or 'dag' expected, {out_type} given")
-        short_name = blake3(name_temp).hexdigest(length=16)
-        row_length = out_size // HASH_BYTES
-        name = out_type + '_L_' + str(row_length) + "_C_" + short_name + '.npy'
-        cwd = os.path.dirname(__file__)
-        file_dir = os.path.join(cwd, f"{coin}_{out_type}_dir")
-        filepath = os.path.join(file_dir, name)
-
-        # check for a saved hash structure
-        if os.path.exists(filepath):
-            print(f"loading {out_type} for length: ", row_length, " and short_name: ", short_name)
-            with open(filepath, 'rb') as file:
-                return np.load(filepath)
-        print(f"  no saved {out_type} found, generating hash structure\n \
-             this will take a while... ", end="")
-
-        # since no saved structure exists, build from scratch
-        if out_type == 'cache':
-            hash_struct = mkcache(cache_size=out_size, seed=seed)
-        elif out_type == 'dag':
-            hash_struct = np.empty([row_length, HASH_BYTES // WORD_BYTES], np.uint32)
-            chunk_len = 1024
-
-            with Parallel(n_jobs=thread_count) as parallel:  # multiprocessing
-                t_start = time.perf_counter()
-                for i in range(0, row_length, thread_count*chunk_len):
-                    temp = np.asarray(parallel(delayed(calc_dataset_chunk)(seed, j, chunk_len)
-                                               for j in range(i, i+thread_count*chunk_len, chunk_len)))
-                    for j in range(len(temp)):
-                        for k in range(len(temp[j])):
-                            if i + (j * chunk_len) + k < row_length:  # to keep from writing out of bounds
-                                hash_struct[i + (j * chunk_len) + k] = temp[j, k]
-                    # IndexError: index 63832022 is out of bounds for axis 0 with size 63832022
-
-                    percent_done = (i + chunk_len) / row_length
-                    t_elapsed = time.perf_counter() - t_start
-                    print(f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, "
-                          f"ETA: {(t_elapsed / percent_done / 60):7.0f}m", end="")
-
-            print(f"elapsed time: {(time.perf_counter() - t_start) / 60:.1f} minutes")
-        else:
-            raise Exception(f"out_type of 'cache' or 'dag' expected, '{out_type}' given")
-
-        # save newly-generated hash structure
-        if not os.path.exists(file_dir):
-            os.mkdir(file_dir)
-        with open(filepath, 'wb') as name:
-            print(f"\nsaving {out_type} for length: ", row_length, " and short_name: ", short_name)
-            np.save(filepath, hash_struct)
-
-        return hash_struct
-        
-        
-    # ----- Cache Generation --------------------------------------------------
-
-
+    
+# ----- Cache Generation ------------------------------------------------------
     def mkcache(cache_size, seed):
         n = cache_size // HASH_BYTES
 
@@ -271,8 +219,6 @@ class Smith:
 
 
 # ----- Full dataset calculation ----------------------------------------------
-
-
     def calc_dataset_chunk(cache, i_start, chunk_len=1):
         n = len(cache)
         r = HASH_BYTES // WORD_BYTES
@@ -304,33 +250,155 @@ class Smith:
             cache_index = fnv(i ^ j, mix[j % r])
             mix = list(map(fnv, mix, cache[cache_index % n]))
         return blake3_512(int_list_to_bytes(mix))
+    
+        
+    def build_hash_struct(out_size, seed, out_type='cache', core_count=1, coin='jng'):
+        # find directory and build file name
+        if out_type == 'cache':
+            name_temp = int_list_to_bytes(seed)
+        elif out_type == 'dag':
+            name_temp = int_list_to_bytes(seed[0])
+        else:
+            raise Exception(f"out_type of 'cache' or 'dag' expected, {out_type} given")
+        short_name = blake3(name_temp).hexdigest(length=16)
+        row_length = out_size // HASH_BYTES
+        name = out_type + '_L_' + str(row_length) + "_C_" + short_name + '.npy'
+        cwd = os.path.dirname(__file__)
+        file_dir = os.path.join(cwd, f"{coin}_{out_type}_dir")
+        filepath = os.path.join(file_dir, name)
+        fp = glob.glob(f"{filepath}_partial.npy")[-1]
+        # check for a saved hash structure
+        if os.path.exists(filepath):
+            print(f"loading {out_type} for length: ", row_length, " and short_name: ", short_name)
+            with open(filepath, 'rb') as file:
+                return np.load(filepath)
+        elif os.path.exists(fp[-1]):
+            with open(fp[-1], 'rb') as hs:
+                hash_struct = np.load(fp[-1])
+                hs.close()
+            with open(f"{filepath}_partial_i.pkl", 'rb') as ind:
+                i_load = pickle.load(ind)
+            print(f"loaded partial {out_type} at {i_load/row_length*100:.1f}% completion")
+            
+        else:
+            print("  no saved {out_type} found!")
+        print(f"generating hash structure... this will take a while... ", end="")
+
+        # since no saved structure exists, build from scratch
+        if out_type == 'cache':
+            hash_struct = mkcache(cache_size=out_size, seed=seed)
+        elif out_type == 'dag':
+            hash_struct = np.empty([row_length, HASH_BYTES // WORD_BYTES], np.uint32)
+            chunk_len = 1024
+            pickle_period = 10  # loops through "i" between partial backups
+            pickle_count = 0
+            with Parallel(n_jobs=core_count) as parallel:  # multiprocessing
+                t_start = time.perf_counter()
+                for i in range(0, row_length, core_count*chunk_len):
+                    temp = np.asarray(parallel(delayed(calc_dataset_chunk)(seed, j, chunk_len)
+                                               for j in range(i, i+core_count*chunk_len, chunk_len)))
+                    for j in range(len(temp)):
+                        for k in range(len(temp[j])):
+                            if i + (j * chunk_len) + k < row_length:  # to keep from writing out of bounds
+                                hash_struct[i + (j * chunk_len) + k] = temp[j, k]
+                    percent_done = (i + chunk_len) / row_length
+                    t_elapsed = time.perf_counter() - t_start
+                    print(f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, "
+                          f"ETA: {(t_elapsed / percent_done / 60):7.0f}m", end="")
+
+                    if i > pickle_count * chunk_len * core_count:
+                        if not os.path.exists(file_dir):
+                            os.mkdir(file_dir)
+                        with open(f"{filepath}_partial.npy", 'wb') as hs:
+                            np.save(filepath, hash_struct)
+                            hs.close()
+                        with open(f"{filepath}_partial_i.pkl", 'wb') as ind:
+                            pickle.dump(i, ind)
+                            ind.close()
+
+            print(f"elapsed time: {(time.perf_counter() - t_start) / 60:.1f} minutes")
+        else:
+            raise Exception(f"out_type of 'cache' or 'dag' expected, '{out_type}' given")
+        # save newly-generated hash structure
+        if not os.path.exists(file_dir):
+            os.mkdir(file_dir)
+        with open(filepath, 'wb') as file:
+            print(f"\nsaving {out_type} for length: ", row_length, " and short_name: ", short_name)
+            np.save(filepath, hash_struct)
+            file.close()
+        return hash_struct
+        
+
+class Link:  # low-level class
+    
+    def __init__(self, link_url, link_hdr):
+        self.url = link_url
+        self.hdr = link_hdr
+        self.chainState = self.get_miner_input(self.url)
+    
+    
+    def get_miner_input(self):
+        info = self.peer_request(url, URL_PATH['MINE_SOLO'])
+        miner_input = info['data']
+        if hdr is None:
+            miner_input['old_hdr'] = False
+        else:
+            miner_input['old_hdr'] = hdr
+        return parse_mining_input(miner_input)
+        
+        
+    def parse_mining_input(miner_input):
+        miner_input_parsed = {
+            'diff': hex(int(miner_input['difficulty'])),
+            'diff_int': int(miner_input['difficulty']),
+            'header': '0x' + base58.b58decode(miner_input['block']).hex(),  # "block" is actually hash of last block
+            'header_b58': miner_input['block'],
+            'block': miner_input['height'],  # "height" is actually "block" number, for ethash
+        }
+        if miner_input['old_hdr'] != miner_input_parsed['header']:
+            miner_input_parsed['new'] = True
+        else:
+            miner_input_parsed['new'] = False
+        # print("miner_input_parsed: ", miner_input_parsed)
+        return miner_input_parsed
 
 
-    def calc_dataset(full_size, cache):
-        # generate the dataset
-        t_start = time.perf_counter()
-        # dataset = []
-        percent_done = 0
-        total_size = full_size // HASH_BYTES
-        dataset = np.empty([total_size, HASH_BYTES // WORD_BYTES], np.uint32)
-        print("percent done:       ", end="")
-        for i in range(total_size):
-            # dataset.append(calc_dataset_item(cache, i))
-            dataset[i] = calc_dataset_item(cache, i)
-            if (i / total_size) > percent_done + 0.0001:
-                percent_done = i / total_size
-                t_elapsed = time.perf_counter() - t_start
-                print(
-                    f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, "
-                    f"ETA: {(t_elapsed * (1/percent_done - 1) / 60):7.0f}m", end="")
-        t_elapsed = time.perf_counter() - t_start
-        print("DAG completed in [only!] ", t_elapsed, " seconds!  oWo  so fast")
-        return dataset
+    def get_peer_block(block_height, peer_url=self.url):
+        # height_param = f"&height={block_height}"
+        height_param = {'height': block_height}
+        return peer_request(peer_url, URL_PATH['GET_BLOCK'], params_dict=height_param)
 
 
-# ----- Main Loop -------------------------------------------------------------
+    # ----- TESTNET ONLY ----- #
+    def submit_solution(submission_dict, peer_url=self.url):
+        return peer_request(peer_url, URL_PATH['SUBMIT_SOLO'], method='post', params_dict=submission_dict)
+    # ----- TESTNET ONLY ----- #
 
 
+    # params_dict example: {'nonce': 1234, 'public_address': 'J2034'}
+    # peer_request function only supports GET and POST methods
+    def peer_request(command_string, method='get', peer_url=self.url, params_dict=None):
+        if method == 'get':
+            if isinstance(params_dict, dict):
+                for k, v in params_dict.items():
+                    # format:  "&public_key=key"
+                    command_string += f"&{str(k)}={str(v)}"
+            print(urljoin(peer_url, command_string))
+            r = requests.get(urljoin(peer_url, command_string))
+        elif method == 'post':
+            print(urljoin(peer_url, command_string))
+            r = requests.post(urljoin(peer_url, command_string), data=params_dict)
+        json_out = r.json()
+        if json_out['status'] == 'error':
+            print(json_out['data'])
+            # sys.exit(1)
+        return json_out
+        
+        
+# ----- Global Functions ------------------------------------------------------
+
+
+# ----- Hashimoto -------------------------------------------------------------
 def hashimoto(header, nonce, full_size, dataset_lookup):
     n = full_size / HASH_BYTES
     w = MIX_BYTES // WORD_BYTES
@@ -368,28 +436,24 @@ def hashimoto_full(full_size, dataset, header, nonce):
     return hashimoto(header, nonce, full_size, lambda x: dataset[x])
 
 
-# ----- Mining ----------------------------------------------------------------
-
-# We break "mine" down into smaller parts, to have better control over the
-# mining process.
-
-
-def random_nonce():
-    return randint(0, 2 ** 64)
-
-
-def mine(full_size, dataset, header, difficulty, nonce):
-    target = get_target(difficulty)
-    while hashimoto_full(full_size, dataset, header, nonce).get("mix digest") > target:
-        nonce = (nonce + 1) % 2 ** 64
-    return nonce
 
 
 # ----- Defining the Seed Hash ------------------------------------------------
+def get_seedset(block_height):
+    back_temp = block_height - int(block_height % EPOCH_LENGTH)
+    seeds = {
+        'back_number': back_temp,  # next seed
+        'front_number': max(back_temp - EPOCH_LENGTH, 0)  # current seed
+    }
+    seeds.update({
+        'back_hash': get_seedhash(seeds['back_number']),  # next hash
+        'front_hash': get_seedhash(seeds['front_number'])  # current hash
+    })
+    return seeds  # for building cache and dagger datasets
+    
 
-
-# example alt_genesis: 'Satoshi is a steely-eyed missile man'
-def get_seedhash(block_height, alt_genesis=None):
+# jengascoin alt_genesis: 'Satoshi is a steely-eyed missile man'
+def get_seedhash(block_height, alt_genesis=JENESIS):
     if alt_genesis is None:
         s = '\x00' * 32
     else:
@@ -399,20 +463,6 @@ def get_seedhash(block_height, alt_genesis=None):
     return s
 
 
-# for building cache and/or dagger
-def get_seedset(block_height):
-    back_temp = block_height - int(block_height % EPOCH_LENGTH)
-    seeds = {
-        'back_number': back_temp,
-        'front_number': max(back_temp - EPOCH_LENGTH, 0)
-    }
-    seeds.update({
-        'back_hash': get_seedhash(seeds['back_number']),
-        'front_hash': get_seedhash(seeds['front_number'])
-    })
-    return seeds
-
-
 def get_target(difficulty, max_target=int(MAX_CHAIN_TARGET)):
     # byte strings are little-endian, have to reverse for target comparison
     if isinstance(max_target, int):
@@ -420,55 +470,6 @@ def get_target(difficulty, max_target=int(MAX_CHAIN_TARGET)):
         return encode_int(max(max_target - difficulty, 1)).ljust(32, '\0')[::-1]
     else:
             raise Exception(f"invalid cache 'size' parameter {size}")
-    
-
-
-# ------- Real-life Jengascoin miner implementation ---------------------------
-
-
-def mine_w_update(full_size, dataset, peer_url, max_target, miner_info=None, update_period=3.0, frozen=False, metadata=None):
-    if isinstance(metadata, dict):
-        _metadata = metadata
-    else:
-        _metadata = {
-            'hash_ceil': 1000,
-            'elapsed': update_period
-        }
-    if miner_info is None:
-        miner_info = get_miner_input(peer_url, frozen)
-    target = get_target(miner_info['diff_int'], max_target=max_target, jengascoin=True)
-
-    def reset_miner(_update_period, __metadata):
-        print(f"hashrate: {__metadata['hash_ceil']/__metadata['elapsed']:.0f} H/s, block: ",
-              miner_info['block'], ", header: ", miner_info['header_b58'])
-        __metadata.update({
-            'hash_ceil': (__metadata['hash_ceil'] * _update_period) // __metadata['elapsed'],
-            'num_hashes': 0,  # initialization value
-            'best_hash': get_target(1, max_target=max_target, jengascoin=True),  # initialization value
-            't_start': time.perf_counter()
-        })
-        return __metadata
-
-    md = reset_miner(update_period, _metadata)
-    nonce = random_nonce()
-
-    while True:
-        while md['num_hashes'] < md['hash_ceil']:
-            out = hashimoto_full(full_size, dataset, miner_info['header'], nonce)
-            if out['mix digest'] < md['best_hash']:
-                if out['mix digest'] < target:
-                    return nonce, out, miner_info['block'], miner_info['header'], md
-                md['best_hash'] = out['mix digest']
-            nonce = (nonce + 1) % 2 ** 64
-            md['num_hashes'] += 1
-        miner_info = get_miner_input(peer_url, _frozen=frozen)
-        if miner_info['new']:
-            md['elapsed'] = time.perf_counter()-md['t_start']
-            md = reset_miner(update_period, md)
-            target = get_target(miner_info['diff_int'], max_target=max_target, jengascoin=True)
-
-
-# ----- Global Functions ------------------------------------------------------
 
 
 def decode_int(s):
