@@ -32,6 +32,7 @@ import struct
 import numpy as np
 from random import randint
 from blake3 import blake3
+import base58
 import requests
 from urllib.parse import urljoin
 from jh_definitions import *
@@ -517,6 +518,7 @@ def peer_request(peer_url, command_string, method='get', params_dict=None):
             for k, v in params_dict.items():
                 # format:  "&public_key=key"
                 command_string += f"&{str(k)}={str(v)}"
+        print(urljoin(peer_url, command_string))
         r = requests.get(urljoin(peer_url, command_string))
     if method == 'post':
         print(urljoin(peer_url, command_string))
@@ -533,7 +535,6 @@ def peer_request(peer_url, command_string, method='get', params_dict=None):
 
 if __name__ == "__main__":
     import sys
-    import base58
 
     # example call:
     # python3 jh.py http://peer1.jengas.io/ <public-key> <private-key>
@@ -569,8 +570,7 @@ if __name__ == "__main__":
     verified = 0
     _md = None
     while True:  # FROZEN ONLY FOR DEBUG & TEST
-        nonce, out, block, header, _md = mine_w_update(get_full_size(miner_input['block'], True, 1),
-                                                  dataset, peer, int(MAX_CHAIN_TARGET), miner_input, 3.0, freeze, _md)
+        nonce, out, block, header, _md = mine_w_update(get_full_size(miner_input['block'], True, 1), dataset, peer, int(MAX_CHAIN_TARGET), miner_input, 3.0, freeze, _md)
         found += 1
         miner_input = get_miner_input(peer, header, freeze)
         result = hashimoto_light(get_full_size(miner_input['block']), cache,
