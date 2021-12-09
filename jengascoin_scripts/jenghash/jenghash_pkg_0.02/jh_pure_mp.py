@@ -214,7 +214,7 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng', thread_count
                                            for j in range(i, i+thread_count*chunk_len, chunk_len)))
                 for j in range(len(temp)):
                     for k in range(len(temp[j])):
-                        if i + (j * chunk_len) + k < len(hash_struct):  # to keep from writing out of bounds
+                        if i + (j * chunk_len) + k < row_length:  # to keep from writing out of bounds
                             hash_struct[i + (j * chunk_len) + k] = temp[j, k]
                 # IndexError: index 63832022 is out of bounds for axis 0 with size 63832022
 
@@ -223,10 +223,7 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng', thread_count
                 print(f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, "
                       f"ETA: {(t_elapsed / percent_done / 60):7.0f}m", end="")
 
-            for i in range(row_length - (row_length % (thread_count * chunk_len))-1, row_length):
-                hash_struct[i] = calc_dataset_item(cache, i)
-
-        print(f"elapsed time: {(time.perf_counter() - t_start)/60:.1f} minutes")
+        print(f"elapsed time: {(time.perf_counter() - t_start) / 60:.1f} minutes")
     else:
         raise Exception(f"out_type of 'cache' or 'dag' expected, '{out_type}' given")
 
