@@ -1,0 +1,6 @@
+priorities:
+
+1) write verification, miner, dagger-build code
+2) save dag incrementally
+2.5) write function test vectors
+3) convert to cython
