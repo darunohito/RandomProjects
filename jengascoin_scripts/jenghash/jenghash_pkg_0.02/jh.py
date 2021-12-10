@@ -16,9 +16,10 @@
 import copy
 import os
 import time
-import json
+import pickle
 import codecs
 import struct
+import glob
 import numpy as np
 from random import randint
 from blake3 import blake3
@@ -59,12 +60,12 @@ URL_PATH = {
 if __name__ == "__main__":
     import sys
 
-    # example call:
+    # example call:      <node address>
     # python3 jh.py http://peer1.jengas.io/ <public-key> <private-key>
     if len(sys.argv) < 4 or len(sys.argv) > 6:
-        print(sys.stderr, "usage: python3", sys.argv[0], "<peer-URL>", "<public-key>", "<private-key>", "(opt)cores", "(opt)freeze")
+        print(sys.stderr, "usage: python3", sys.argv[0], "<node-URL>", "<public-key>", "<private-key>", "(opt)cores", "(opt)freeze")
         sys.exit(1)
-    peer = sys.argv[1]
+    node = sys.argv[1]
 
     cores = 1
     if len(sys.argv) > 4:
@@ -82,115 +83,197 @@ if __name__ == "__main__":
 
 class Verifier:  # high-level class
 
+    # must be initialized with either local chainState dictionary or node_url
+    def __init__(self, size_max=1, chain_state=None, node_url=None):
+        self.sizeMax = size_max
+        if isinstance(chain_state, dict):
+            self.chainState = chain_state
+        # init ultralight verifier link (link only useful for dev)
+        elif isinstance(node_url, str):  # if ultralight verifier
+            self.link = Link(node_url)  # check status of node chain
+            self.chainState = self.link.chainState
+        print("Initial Chain State/Miner Info: \n", self.chainState)
+        self.target = get_target(self.chainState['diff_int'])
+        # init verifier smith
+        self.seeds = get_seedset(self.chainState['height'])
+        self.smith = Smith(self.seeds, self.sizeMax)
+        # build cache and dagger for current epoch
+        self.smith.cache = self.smith.build_hash_struct(self.smith.cacheSize, deserialize_hash(self.seeds['front_hash']))
 
-    # must be initialized with either local chainState dictionary or peer_url
-    def __init__(self, size_max, cores, chainState=None, peerUrl=None):
-        self.size_max = size_max
-        # init ultralight verifier lnk (link only useful for dev)
-        if isinstance(peerUrl, str):  # if ultralight verifier
-            self.lnk = Link(peerUrl)  # check status of peer chain
-            self.input = lnk.chainState  # copy to local mining info
-            print("Initial Peer Chain State: \n", self.input)
-        self.target = get_target(self.input['diff_int'])
-        # init verifier smth
-        self.smth = Smith(lnk, size_max, pubKey, cores)
-        self.seeds = get_seedset(input['height'])
-        # build cache for current epoch
-        smth.cache = smth.build_hash_struct(smth.cacheSize, deserialize_hash(seeds['back_hash']))
-    
-    
-    # ultralight verifier lnk update (link only useful for dev)
-    def peer_update():
-        self.input = lnk.get_miner_input()
-    
-    
-    def verify(cmix, s_cmix_hash, nonce, size_coeff, header, diff):
-        if header != self.input['header']:
+    # ultralight verifier link update (link only useful for dev)
+    def node_update(self):
+        self.chainState = self.link.get_miner_input()
+
+    # cmix, s_cmix_hash, nonce, and size_scalar are miner inputs to the verifier
+    def verify(self, cmix, s_cmix_hash, nonce, header, size_scalar):
+        if header != self.chainState['header']:
             return False  # DDoS protection layer 1
-            self.target = get_target(diff)
         elif cmix > self.target:
             return False  # layer 2
-        res = serialize_hash(blake3_256(blake3_512(str_to_bytes(self.input['header']) + struct.pack("<Q", nonce)) + cmix))
+        res = serialize_hash(blake3_256(blake3_512(str_to_bytes(self.chainState['header'])
+                                                   + struct.pack("<Q", nonce)) + cmix))
         if res != s_cmix_hash:
             return False  # layer 3
-        elif hashimoto_light(smth.get_full_size(size_coeff), self.cache, self.header, nonce)['mix digest'] < self.target:
+        self.smith.sizeScalarAlt = size_scalar
+        cmix_check = self.hashimoto_light(self.smith.get_full_size(size_scalar), self.smith.cache,
+                                  self.chainState['header'], nonce)['mix digest']
+        if cmix_check == cmix:
             return True  # actual nonce check
         else:
             return False
-        
+
+    def hashimoto_light(self, full_size, cache, header, nonce):
+        return hashimoto(header, nonce, full_size,
+                         lambda x: self.smith.calc_dataset_item(x))
+
 
 class Miner:  # high-level class
 
-    def __init__(self, peerUrl, pubKey, priKey, size_coeff, cores):
+    # must be initialized with either local chainState dictionary or node_url
+    def __init__(self, public_key, private_key, size_scalar, chain_state=None, node_url=None, cores=1, init_build=False):
         # init static vars
-        self.pubKey = pubKey
-        self.priKey = priKey
-        self.size_coeff = size_coeff
-        # init miner lnk
-        self.lnk = Link(peerUrl)
-        self.input = lnk.chainState
-        self.target = get_target(self.input['diff'], int(MAX_CHAIN_TARGET))
-        # init miner smth
-        self.smth = Smith(lnk, size_coeff, pubKey, cores)
-        self.seeds = get_seedset(input['height'])
-        # build cache and dagger for current epoch
-        smth.cache = smth.build_hash_struct(smth.cacheSize, deserialize_hash(seeds['back_hash']))
-        smth.dagger = smth.build_hash_struct(smth.dagSize, smth.cache, 'dag', cores)
+        self.creds = {'pubKey': public_key, 'priKey': private_key}
+        self.specs = {'sizeScalar': size_scalar, 'cores': cores}
+        # Check if mining on local node or server node
+        if isinstance(chain_state, dict):
+            self.chainState = chain_state
+        elif isinstance(node_url, str):  # if ultralight verifier
+            self.link = Link(node_url)  # check status of node chain
+            self.chainState = self.link.chainState
+        print("Initial Chain State/Miner Info: \n", self.chainState)
+        self.target = get_target(self.link.chainState['diff'], int(MAX_CHAIN_TARGET))
+        # init miner smith
+        self.seeds = get_seedset(self.link.chainState['height'])
+        self.smith = Smith(self.seeds, self.specs['sizeScalar'], self.creds['pubKey'], self.specs['cores'])
+        if init_build:
+            # build cache and dagger for current epoch
+            self.smith.cache = self.smith.build_hash_struct(
+                self.smith.cacheSize, deserialize_hash(self.seeds['back_hash']))
+            self.smith.dagger = self.smith.build_hash_struct(self.smith.dagSize,
+                                                             self.smith.cache, 'dag', self.specs['cores'])
 
-
+    @staticmethod
     def random_nonce():
         return randint(0, 2 ** 64)
 
-
-    def mine(full_size, dataset, header, difficulty, nonce):
-        target = get_target(difficulty)
-        while hashimoto_full(full_size, dataset, header, nonce).get("mix digest") > target:
+    def mine(self, full_size, dataset, header, difficulty, nonce):
+        while hashimoto_full(full_size, dataset, header, nonce).get("mix digest") > self.target:
             nonce = (nonce + 1) % 2 ** 64
         return nonce
-            
 
-class Smith:  # low-level class
 
-    def __init__(self, lnk, size_coeff, pubkey, cores):
-        self.lnk = lnk
-        self.cacheSize = size_coeff * CACHE_BYTES_INIT
-        self.dagSize = size_coeff * DATASET_BYTES_INIT
-        self.pubKey = pubKey
+class Link:  # low-level class, for linking miners/verifiers to nodes/peers
+
+    def __init__(self, link_url, link_hdr=None):
+        self.url = link_url
+        self.hdr = link_hdr
+        self.chainState = self.get_miner_input()
+
+    def get_miner_input(self):
+        info = self.node_request(URL_PATH['MINE_SOLO'])
+        miner_input = info['data']
+        if self.hdr is None:
+            miner_input['old_hdr'] = False
+        else:
+            miner_input['old_hdr'] = self.hdr
+        return self.parse_mining_input(miner_input)
+
+    @staticmethod
+    def parse_mining_input(miner_input):
+        miner_input_parsed = {
+            'diff': hex(int(miner_input['difficulty'])),
+            'diff_int': int(miner_input['difficulty']),
+            'header': '0x' + base58.b58decode(miner_input['block']).hex(),  # "block" is actually hash of last block
+            'header_b58': miner_input['block'],
+            'block': miner_input['height'],  # "height" is actually "block" number, for ethash
+        }
+        if miner_input['old_hdr'] != miner_input_parsed['header']:
+            miner_input_parsed['new'] = True
+        else:
+            miner_input_parsed['new'] = False
+        # print("miner_input_parsed: ", miner_input_parsed)
+        return miner_input_parsed
+
+    def get_node_block(self, block_height):
+        # height_param = f"&height={block_height}"
+        height_param = {'height': block_height}
+        return self.node_request(URL_PATH['GET_BLOCK'], params_dict=height_param)
+
+    # ----- TESTNET ONLY ----- #
+    def submit_solution(self, submission_dict):
+        return self.node_request(URL_PATH['SUBMIT_SOLO'], method='post', params_dict=submission_dict)
+    # ----- TESTNET ONLY ----- #
+
+    # params_dict example: {'nonce': 1234, 'public_address': 'J2034'}
+    # node_request function only supports GET and POST methods
+    def node_request(self, command_string, method='get', params_dict=None):
+        if method == 'get':
+            if isinstance(params_dict, dict):
+                for k, v in params_dict.items():
+                    # format:  "&public_key=key"
+                    command_string += f"&{str(k)}={str(v)}"
+            print(urljoin(self.url, command_string))
+            r = requests.get(urljoin(self.url, command_string))
+        elif method == 'post':
+            print(urljoin(self.url, command_string))
+            r = requests.post(urljoin(self.url, command_string), data=params_dict)
+        else:
+            raise Exception(f"invalid node_request 'method' parameter {method}")
+        json_out = r.json()
+        if json_out['status'] == 'error':
+            print(json_out['data'])
+            # sys.exit(1)
+        return json_out
+
+
+class Smith:  # low-level class, for managing mining caches and datasets for miners/verifiers
+
+    def __init__(self, seeds, size_scalar=1, cores=1, key=None, tiny=False, tiny_div=100):
+        if tiny:
+            self.tiny = tiny  # used for quick-run tests with small datasets
+            self.tinyDiv = tiny_div
+        self.sizeScalar = size_scalar
+        self.sizeScalarAlt = 1  # reserved for future functionality, for use with Verifier class
+        self.cacheSize = self.get_cache_size()
+        print(f"Smith cache size: {self.cacheSize}")
+        self.dagSize = self.get_full_size()
+        print(f"Smith dagger size: {self.dagSize}")
+        self.seeds = seeds
+        self.key = key  # reserved for future functionality
         self.cores = cores
-        
         self.cache = None
         self.dagger = None
 
-    # for jengascoin use, set size_coeff=<dataset_size> [in integer *Gibibytes*]
-    def get_cache_size(size_coeff=1, tiny=False):    
-        if isinstance(size_coeff, int):
-            sz = CACHE_BYTES_INIT * size_coeff
+    # for Jengascoin use, set size_scalar=<dataset_size> [in integer *Gibibytes*]
+    def get_cache_size(self, alt_scalar=False):
+        scalar = self.sizeScalarAlt if alt_scalar else self.sizeScalar
+        if isinstance(scalar, int):
+            sz = CACHE_BYTES_INIT * scalar
         else:
-            raise Exception(f"invalid cache 'size_coeff' parameter {size_coeff}")
-        if tiny:
-            sz = sz // 100
+            raise Exception(f"invalid get_cache_size 'sizeScalar' parameter {self.sizeScalar}")
+        if self.tiny:
+            sz = sz // self.tinyDiv
+            sz = sz - sz % 2
         while not isprime(sz / HASH_BYTES):
             sz -= 2 * HASH_BYTES
         return sz
-        
-        
-    # size_coeff=<target_size> [in *Gibibytes*]
-    def get_full_size(size_coeff=1, tiny=False):
-        if isinstance(size_coeff, int):
-            sz = DATASET_BYTES_INIT * size_coeff
+
+    # size_scalar=<target_size> [in *Gibibytes*]
+    def get_full_size(self, alt_scalar=False):
+        scalar = self.sizeScalarAlt if alt_scalar else self.sizeScalar
+        if isinstance(scalar, int):
+            sz = DATASET_BYTES_INIT * scalar
         else:
-            raise Exception(f"invalid cache 'size_coeff' parameter {size_coeff}")
-        if tiny:
-            sz = sz // 100
+            raise Exception(f"invalid get_full_size 'sizeScalar' or 'sizeScalarAlt parameter {scalar}")
+        if self.tiny:
+            sz = sz // self.tinyDiv
         while not isprime(sz / MIX_BYTES):
             sz -= 2 * MIX_BYTES
         return sz
-    
-    
-# ----- Cache Generation ------------------------------------------------------
-    def mkcache(cache_size, seed):
-        n = cache_size // HASH_BYTES
 
+# ----- Manual Cache Generation -----------------------------------------------
+    def mkcache(self, seed):
+        n = self.get_cache_size() // HASH_BYTES
         # Sequentially produce the initial dataset
         o = np.empty([n, HASH_BYTES // WORD_BYTES], np.uint32)
         o[0] = blake3_512(seed)
@@ -207,86 +290,115 @@ class Smith:  # low-level class
                 o[i] = blake3_512(o_temp)
         return o
 
-
 # ----- Full dataset calculation ----------------------------------------------
-    def calc_dataset_chunk(cache, i_start, chunk_len=1):
-        n = len(cache)
+    def calc_dataset_chunk(self, i_start, chunk_len=1):
+        n = len(self.cache)
         r = HASH_BYTES // WORD_BYTES
         i_start = int(i_start)
         o = np.empty([chunk_len, 16], dtype=np.uint32)
         # initialize the mix
         for i in range(chunk_len):
-            mix = copy.copy(cache[(i+i_start) % n])
+            mix = copy.copy(self.cache[(i+i_start) % n])
             mix[0] ^= i
             mix = blake3_512(int_list_to_bytes(mix))
             # fnv it with a lot of random cache nodes based on i
             for j in range(DATASET_PARENTS):
                 cache_index = fnv((i+i_start) ^ j, mix[j % r])
-                mix = list(map(fnv, mix, cache[cache_index % n]))
+                mix = list(map(fnv, mix, self.cache[cache_index % n]))
             o[i] = blake3_512(int_list_to_bytes(mix))
         return o
 
-
-    def calc_dataset_item(cache, i):
-        n = len(cache)
+    def calc_dataset_item(self, i):
+        n = len(self.cache)
         r = HASH_BYTES // WORD_BYTES
         i = int(i)
         # initialize the mix
-        mix = copy.copy(cache[i % n])
+        mix = copy.copy(self.cache[i % n])
         mix[0] ^= i
         mix = blake3_512(int_list_to_bytes(mix))
         # fnv it with a lot of random cache nodes based on i
         for j in range(DATASET_PARENTS):
             cache_index = fnv(i ^ j, mix[j % r])
-            mix = list(map(fnv, mix, cache[cache_index % n]))
+            mix = list(map(fnv, mix, self.cache[cache_index % n]))
         return blake3_512(int_list_to_bytes(mix))
-    
-        
-    def build_hash_struct(out_size, seed, out_type='cache', core_count=1, coin='jng'):
+
+    def calc_dataset(self):
+        # generate the dataset
+        t_start = time.perf_counter()
+        # dataset = []
+        t_elapsed = percent_done = 0
+        total_size = self.dagSize // HASH_BYTES
+        dataset = np.empty([total_size, HASH_BYTES // WORD_BYTES], np.uint32)
+        print("percent done:       ", end="")
+        for i in range(total_size):
+            # dataset.append(calc_dataset_item(cache, i))
+            dataset[i] = self.calc_dataset_item(i)
+            if (i / total_size) > percent_done + 0.0001:
+                percent_done = i / total_size
+                t_elapsed = time.perf_counter() - t_start
+                print(f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, "
+                      f"ETA: {(((1 - percent_done) / percent_done) * t_elapsed / 60 ):7.0f}m", end="")
+        print("DAG completed in [only!] ", t_elapsed, " seconds!  oWo  so fast")
+
+        return dataset
+
+    # flexible cache/dagger building method. Searches for saved structures, saves incrementally.
+    def build_hash_struct(self, out_type, alt_seed=None, alt_size=None):
+        if isinstance(alt_seed, (int, list)) and isinstance(alt_seed[0], int):
+            seed = alt_seed
+        else:
+            Warning("invalid 'alt_seed' value used in 'build_hash_struct' function")
+            seed = self.seeds['front_seed']
         # find directory and build file name
         if out_type == 'cache':
             name_temp = int_list_to_bytes(seed)
+            out_size = alt_size if isinstance(alt_size, int) else self.cacheSize
         elif out_type == 'dag':
             name_temp = int_list_to_bytes(seed[0])
+            out_size = alt_size if isinstance(alt_size, int) else self.dagSize
         else:
             raise Exception(f"out_type of 'cache' or 'dag' expected, {out_type} given")
         short_name = blake3(name_temp).hexdigest(length=16)
         row_length = out_size // HASH_BYTES
         name = out_type + '_L_' + str(row_length) + "_C_" + short_name + '.npy'
         cwd = os.path.dirname(__file__)
-        file_dir = os.path.join(cwd, f"{coin}_{out_type}_dir")
+        file_dir = os.path.join(cwd, f"jng_{out_type}_dir")
         filepath = os.path.join(file_dir, name)
-        fp = glob.glob(f"{filepath}_partial.npy")[-1]
         # check for a saved hash structure
         if os.path.exists(filepath):
             print(f"loading {out_type} for length: ", row_length, " and short_name: ", short_name)
             with open(filepath, 'rb') as file:
-                return np.load(filepath)
-        elif os.path.exists(fp[-1]):
-            with open(fp[-1], 'rb') as hs:
-                hash_struct = np.load(fp[-1])
-                hs.close()
-            with open(f"{filepath}_partial_i.pkl", 'rb') as ind:
-                i_load = pickle.load(ind)
-            print(f"loaded partial {out_type} at {i_load/row_length*100:.1f}% completion")
-            
+                hash_struct = np.load(filepath)
+                file.close()
+                return hash_struct
         else:
             print("  no saved {out_type} found!")
         print(f"generating hash structure... this will take a while... ", end="")
-
         # since no saved structure exists, build from scratch
         if out_type == 'cache':
-            hash_struct = mkcache(cache_size=out_size, seed=seed)
+            hash_struct = self.mkcache(seed)
         elif out_type == 'dag':
-            hash_struct = np.empty([row_length, HASH_BYTES // WORD_BYTES], np.uint32)
+            fp = glob.glob(f"{filepath}_partial.npy")[-1]
+            if os.path.exists(fp):  # search for partial dataset
+                with open(fp, 'rb') as hs:
+                    hash_struct = np.load(fp)  # load dataset to hash_struct
+                    hs.close()
+                with open(f"{filepath}_partial_i.pkl", 'rb') as ind:
+                    i_start = pickle.load(ind)  # check current index of partial dataset
+                    ind.close()
+                print(f"loaded partial {out_type} at {i_start / row_length * 100:.1f}% completion")
+            else:
+                hash_struct = np.empty([row_length, HASH_BYTES // WORD_BYTES], np.uint32)
+                i_start = 0
+
             chunk_len = 1024
             pickle_period = 10  # loops through "i" between partial backups
             pickle_count = 0
-            with Parallel(n_jobs=core_count) as parallel:  # multiprocessing
+            with Parallel(n_jobs=self.cores) as parallel:  # multiprocessing
                 t_start = time.perf_counter()
-                for i in range(0, row_length, core_count*chunk_len):
-                    temp = np.asarray(parallel(delayed(calc_dataset_chunk)(seed, j, chunk_len)
-                                               for j in range(i, i+core_count*chunk_len, chunk_len)))
+                for i in range(i_start, row_length, self.cores*chunk_len):
+                    temp = np.asarray(parallel(delayed(self.calc_dataset_chunk)(seed, j, chunk_len)
+                                               for j in range(i, i+self.cores*chunk_len, chunk_len)))
                     for j in range(len(temp)):
                         for k in range(len(temp[j])):
                             if i + (j * chunk_len) + k < row_length:  # to keep from writing out of bounds
@@ -294,9 +406,11 @@ class Smith:  # low-level class
                     percent_done = (i + chunk_len) / row_length
                     t_elapsed = time.perf_counter() - t_start
                     print(f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{(percent_done * 100):5.2f}%, "
-                          f"ETA: {(t_elapsed / percent_done / 60):7.0f}m", end="")
+                          f"ETA: {(((1 - percent_done) / percent_done) * t_elapsed / 60 ):7.0f}m", end="")
+                    # f"ETA: {(t_elapsed / percent_done / 60):7.0f}m", end = "")
 
-                    if i > pickle_count * chunk_len * core_count:
+                    if i > pickle_count * pickle_period * chunk_len * self.cores:
+                        pickle_count = i
                         if not os.path.exists(file_dir):
                             os.mkdir(file_dir)
                         with open(f"{filepath}_partial.npy", 'wb') as hs:
@@ -317,74 +431,8 @@ class Smith:  # low-level class
             np.save(filepath, hash_struct)
             file.close()
         return hash_struct
-        
-
-class Link:  # low-level class
-    
-    def __init__(self, link_url, link_hdr):
-        self.url = link_url
-        self.hdr = link_hdr
-        self.chainState = self.get_miner_input(self.url)
-    
-    
-    def get_miner_input(self):
-        info = self.peer_request(url, URL_PATH['MINE_SOLO'])
-        miner_input = info['data']
-        if hdr is None:
-            miner_input['old_hdr'] = False
-        else:
-            miner_input['old_hdr'] = hdr
-        return parse_mining_input(miner_input)
-        
-        
-    def parse_mining_input(miner_input):
-        miner_input_parsed = {
-            'diff': hex(int(miner_input['difficulty'])),
-            'diff_int': int(miner_input['difficulty']),
-            'header': '0x' + base58.b58decode(miner_input['block']).hex(),  # "block" is actually hash of last block
-            'header_b58': miner_input['block'],
-            'block': miner_input['height'],  # "height" is actually "block" number, for ethash
-        }
-        if miner_input['old_hdr'] != miner_input_parsed['header']:
-            miner_input_parsed['new'] = True
-        else:
-            miner_input_parsed['new'] = False
-        # print("miner_input_parsed: ", miner_input_parsed)
-        return miner_input_parsed
 
 
-    def get_peer_block(block_height, peer_url=self.url):
-        # height_param = f"&height={block_height}"
-        height_param = {'height': block_height}
-        return peer_request(peer_url, URL_PATH['GET_BLOCK'], params_dict=height_param)
-
-
-    # ----- TESTNET ONLY ----- #
-    def submit_solution(submission_dict, peer_url=self.url):
-        return peer_request(peer_url, URL_PATH['SUBMIT_SOLO'], method='post', params_dict=submission_dict)
-    # ----- TESTNET ONLY ----- #
-
-
-    # params_dict example: {'nonce': 1234, 'public_address': 'J2034'}
-    # peer_request function only supports GET and POST methods
-    def peer_request(command_string, method='get', peer_url=self.url, params_dict=None):
-        if method == 'get':
-            if isinstance(params_dict, dict):
-                for k, v in params_dict.items():
-                    # format:  "&public_key=key"
-                    command_string += f"&{str(k)}={str(v)}"
-            print(urljoin(peer_url, command_string))
-            r = requests.get(urljoin(peer_url, command_string))
-        elif method == 'post':
-            print(urljoin(peer_url, command_string))
-            r = requests.post(urljoin(peer_url, command_string), data=params_dict)
-        json_out = r.json()
-        if json_out['status'] == 'error':
-            print(json_out['data'])
-            # sys.exit(1)
-        return json_out
-        
-        
 # ----- Global Functions ------------------------------------------------------
 
 
@@ -417,32 +465,30 @@ def hashimoto(header, nonce, full_size, dataset_lookup):
     }
 
 
-def hashimoto_light(full_size, cache, header, nonce):
-    return hashimoto(header, nonce, full_size,
-                     lambda x: calc_dataset_item(cache, x))
-
-
+# note: hashimoto_light is defined in the Verifier class
 def hashimoto_full(full_size, dataset, header, nonce):
     return hashimoto(header, nonce, full_size, lambda x: dataset[x])
-
-
 
 
 # ----- Defining the Seed Hash ------------------------------------------------
 def get_seedset(block_height):
     back_temp = block_height - int(block_height % EPOCH_LENGTH)
     seeds = {
-        'back_number': back_temp,  # next seed
-        'front_number': max(back_temp - EPOCH_LENGTH, 0)  # current seed
+        'back_number': back_temp,
+        'front_number': max(back_temp - EPOCH_LENGTH, 0)
     }
     seeds.update({
-        'back_hash': get_seedhash(seeds['back_number']),  # next hash
-        'front_hash': get_seedhash(seeds['front_number'])  # current hash
+        'back_hash': get_seedhash(seeds['back_number']),
+        'front_hash': get_seedhash(seeds['front_number'])
     })
-    return seeds  # for building cache and dagger datasets
-    
+    seeds.update({
+        'back_seed': deserialize_hash(seeds['back_hash']),
+        'front_seed': deserialize_hash(seeds['front_hash'])
+    })
+    return seeds
 
-# jengascoin alt_genesis: 'Satoshi is a steely-eyed missile man'
+
+# Jengascoin alt_genesis: 'Satoshi is a steely-eyed missile man'
 def get_seedhash(block_height, alt_genesis=JENESIS):
     if alt_genesis is None:
         s = '\x00' * 32
@@ -459,7 +505,7 @@ def get_target(difficulty, max_target=int(MAX_CHAIN_TARGET)):
         # Jengascoin currently uses subtractive difficulty (not division-scaled)
         return encode_int(max(max_target - difficulty, 1)).ljust(32, '\0')[::-1]
     else:
-            raise Exception(f"invalid cache 'size' parameter {size}")
+        raise Exception(f"invalid get_target 'max_target' parameter {max_target}")
 
 
 def decode_int(s):

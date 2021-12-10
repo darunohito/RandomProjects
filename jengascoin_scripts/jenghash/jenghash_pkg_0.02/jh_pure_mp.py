@@ -408,6 +408,10 @@ def get_seedset(block_height):
         'back_hash': get_seedhash(seeds['back_number']),
         'front_hash': get_seedhash(seeds['front_number'])
     })
+    seeds.update({
+        'back_seed': deserialize_hash(seeds['back_hash']),
+        'front_seed': deserialize_hash(seeds['front_hash'])
+    })
     return seeds
 
 
