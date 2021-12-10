@@ -272,7 +272,7 @@ def calc_dataset_chunk(cache, i_start, chunk_len=1):
     # initialize the mix
     for i in range(chunk_len):
         mix = copy.copy(cache[(i+i_start) % n])
-        mix[0] ^= i
+        mix[0] ^= i+i_start
         mix = blake3_512(int_list_to_bytes(mix))
         # fnv it with a lot of random cache nodes based on i
         for j in range(DATASET_PARENTS):

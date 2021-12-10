@@ -49,8 +49,21 @@ def main():
     print(f"time to run hashimoto_light: {time_elapsed * 1000:.2f} ms")
 
     print("starting to build dagger...")
-    dagger = build_hash_struct(get_full_size(block), cache, out_type='dag', coin='eth', thread_count=th)
-    hash_full = hashimoto_full(get_full_size(block), dagger, hdr, nonce)
+    dagger = build_hash_struct(dag_bytes, cache, out_type='dag', coin='eth', thread_count=th)
+
+    i = 0
+    single = calc_dataset_item(cache, i)
+    while all([a == b for a, b in zip(dagger[i], single)]):
+        i += 1
+        single = calc_dataset_item(cache, i)
+        print(f"\b\b\b\b\b\b\b\b\b\b\b\b{i}", end='')
+
+        # r = randint(0, dag_bytes // HASH_BYTES)
+        # single = calc_dataset_item(cache, r)
+        # assert all([a == b for a, b in zip(dagger[r], single)]), \
+        #     f"failed at index {r}\ndagger: {dagger[r]}\nsingle: {single}"
+
+    hash_full = hashimoto_full(dag_bytes, dagger, hdr, nonce)
     print("cmix_full: ", "%064x" % decode_int(hash_full["mix digest"][::-1]))
     print("res_full ", "%064x" % decode_int(hash_full["result"][::-1]))
     assert hash == hash_full

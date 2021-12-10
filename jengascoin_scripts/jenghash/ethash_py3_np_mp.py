@@ -119,8 +119,8 @@ def build_hash_struct(out_size, seed, out_type='cache', coin='jng', thread_count
             for i in range(0, row_length, thread_count*chunk_len):
                 temp = np.asarray(parallel(delayed(calc_dataset_chunk)(seed, j, chunk_len)
                                            for j in range(i, i+thread_count*chunk_len, chunk_len)))
-                for j in range(len(temp)):
-                    for k in range(len(temp[j])):
+                for j in range(len(temp)):  # iterate through threads
+                    for k in range(len(temp[j])):  #
                         if i + (j * chunk_len) + k < row_length:  # to keep from writing out of bounds
                             hash_struct[i + (j * chunk_len) + k] = temp[j, k]
                 # IndexError: index 63832022 is out of bounds for axis 0 with size 63832022
@@ -178,7 +178,7 @@ def calc_dataset_chunk(cache, i_start, chunk_len=1):
     # initialize the mix
     for i in range(chunk_len):
         mix = copy.copy(cache[(i+i_start) % n])
-        mix[0] ^= i
+        mix[0] ^= i+i_start
         mix = sha3_512(mix)
         # fnv it with a lot of random cache nodes based on i
         for j in range(DATASET_PARENTS):
