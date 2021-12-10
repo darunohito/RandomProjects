@@ -2,7 +2,6 @@
 
 from jh import *
 import sys
-import sha3  # because blake3 won't work on arrays
 
 node = sys.argv[1] if len(sys.argv) >= 2 else 'peer1.jengas.io'
 cores = int(sys.argv[2]) if len(sys.argv) >= 3 else 2
@@ -98,17 +97,17 @@ print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 print("~~~~~~~ Miner and Verifier Hashimoto Tests ~~~~~~\n")
 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
-for i in range(100):
+for i in range(32):
     nonce = miner.random_nonce()
-    print(f"\rloop {i+1}/100, nonce: {nonce}")
     hash1 = hashimoto_full(smith.dagSize, dagger1, miner.chainState['header'], nonce)
     hash2 = hashimoto_full(smith.dagSize, smith.dagger, miner.chainState['header'], nonce)
     hash3 = hashimoto_full(smith.dagSize, dagger3, miner.chainState['header'], nonce)
     assert all([a == b == c for a, b, c in zip(hash1, hash2, hash3)]), "hashes not equal"
-    res = verifier.verify(hash1['mix digest'], hash2['result'], nonce,
+    res, info = verifier.verify(hash1['mix digest'], hash2['result'], nonce,
                           verifier.chainState['header'], miner.specs['sizeScalar'])
     light_hash = verifier.hashimoto_light(smith.dagSize, cache2, miner.chainState['header'], nonce)
     assert all([a == b for a, b in zip(hash1, light_hash)])
+    print(f"loop {i+1}/100, nonce: {nonce}, verified? {res}, reason? {info}, mix digest: {hash1['mix digest']}")
 
 print("All Miner and Verifier Hashimoto tests passed!")
 

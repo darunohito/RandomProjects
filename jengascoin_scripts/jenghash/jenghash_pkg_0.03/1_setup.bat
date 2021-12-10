@@ -1,5 +1,5 @@
 python -m ensurepip
-python -m pip install --upgrade pip
+:: python -m pip install --upgrade pip
 pip3 install blake3
 pip3 install numpy
 pip3 install cython

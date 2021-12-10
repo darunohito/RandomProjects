@@ -25,7 +25,6 @@ from blake3 import blake3
 import base58
 import requests
 from urllib.parse import urljoin
-from jh_definitions import *
 from joblib import Parallel, delayed
 
 
@@ -44,7 +43,7 @@ DATASET_PARENTS = 256  # number of parents of each dataset element
 CACHE_ROUNDS = 3  # number of rounds in cache production
 ACCESSES = 64  # number of accesses in hashimoto loop
 JENESIS = 'Satoshi is a steely-eyed missile man'
-MAX_CHAIN_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
+MAX_CHAIN_TARGET = 0x0FFFFFFFFFFF0000000000000000000000000000000000000000000000000000  # modified
 
 URL_PATH = {
     'MINE_SOLO':        '/api.php?q=getMiningInfo',
@@ -107,20 +106,20 @@ class Verifier:  # high-level class
     # mix_digest, s_cmix_hash, nonce, header, and size_scalar are miner inputs to the verifier
     def verify(self, mix_digest, s_cmix_hash, nonce, header, size_scalar):
         if header != self.chainState['header']:
-            return False  # DDoS protection layer 1
+            return False, 'header does not match'  # DDoS protection layer 1
         elif mix_digest > self.target:
-            return False  # layer 2
+            return False, 'mix digest > target'  # layer 2
         res = serialize_hash(blake3_256(blake3_512(str_to_bytes(self.chainState['header'])
                                                    + struct.pack("<Q", nonce)) + mix_digest))
         if res != s_cmix_hash:
-            return False  # layer 3
+            return False, 's_cmix_hash does not match header and mix digest hash result'  # layer 3
         self.smith.sizeScalarAlt = size_scalar
         mix_digest_check = self.hashimoto_light(self.smith.get_full_size(size_scalar), self.smith.cache,
                                   self.chainState['header'], nonce)['mix digest']
         if mix_digest_check == mix_digest:
-            return True  # actual nonce check
+            return True, 'nonce good'  # actual nonce check
         else:
-            return False
+            return False, 'mix digest does not match hashimoto_light result'
 
     def hashimoto_light(self, full_size, cache, header, nonce):
         return hashimoto(header, nonce, full_size,
@@ -217,7 +216,7 @@ class Link:  # low-level class, for linking miners/verifiers to nodes/peers
         return json_out
 
 
-class Smith:  # low-level class, for managing mining caches and datasets for miners/verifiers
+class Smith:  # low-level class, for managing caches and datasets for miners/verifiers
 
     def __init__(self, seeds, size_scalar=1, cores=1, key=None, tiny=False, tiny_div=100):
         self.tiny = tiny  # used for quick-run tests with small datasets
@@ -412,16 +411,6 @@ class Smith:  # low-level class, for managing mining caches and datasets for min
                         with open(partial_fp_i, 'wb') as ind:
                             pickle.dump(i, ind)
                             ind.close()
-                        # with open(partial_fp_n, 'rb') as hs:
-                        #     temp_dag = np.load(partial_fp_n)
-                        #     assert all([a == b for a, b in zip(temp_dag, hash_struct)]), \
-                        #         "written and read dagger do not match!"
-                        #     hs.close()
-                        # with open(partial_fp_i, 'rb') as ind:
-                        #     temp_i = pickle.load(ind)
-                        #     assert temp_i == i, f"written [{i}] and read [{temp_i}] index do not match!"
-                        #     ind.close()
-
 
             print(f"\nelapsed time: {(time.perf_counter() - t_start) / 60:.1f} minutes")
         else:
