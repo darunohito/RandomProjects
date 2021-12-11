@@ -98,6 +98,7 @@ class Verifier:  # high-level class
         self.smith = Smith(self.seeds, self.sizeMax, tiny=self.tiny)
         # build cache for current epoch
         self.smith.cache = self.smith.build_hash_struct('cache')
+        self.smith.cache_next = self.smith.build_hash_struct('cache', )
 
     # ultralight verifier link update (link only useful for dev)
     def node_update(self):
