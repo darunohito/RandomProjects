@@ -52,11 +52,11 @@ def main():
     dagger = build_hash_struct(dag_bytes, cache, out_type='dag', coin='eth', thread_count=th)
 
     i = 0
-    single = calc_dataset_item(cache, i)
-    while all([a == b for a, b in zip(dagger[i], single)]):
-        i += 1
-        single = calc_dataset_item(cache, i)
-        print(f"\b\b\b\b\b\b\b\b\b\b\b\b{i}", end='')
+    # single = calc_dataset_item(cache, i)
+    # while all([a == b for a, b in zip(dagger[i], single)]):
+    #     i += 1
+    #     single = calc_dataset_item(cache, i)
+    #     print(f"\b\b\b\b\b\b\b\b\b\b\b\b{i}", end='')
 
         # r = randint(0, dag_bytes // HASH_BYTES)
         # single = calc_dataset_item(cache, r)

@@ -111,7 +111,7 @@ class Verifier:  # high-level class
         elif mix_digest > self.target:
             return False  # layer 2
         res = serialize_hash(blake3_256(blake3_512(str_to_bytes(self.chainState['header'])
-                                                   + struct.pack("<Q", nonce)) + mix_digest))
+                                                   + struct.pack("<Q", nonce)) + str_to_bytes(mix_digest)))
         if res != s_cmix_hash:
             return False  # layer 3
         self.smith.sizeScalarAlt = size_scalar

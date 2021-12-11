@@ -98,7 +98,7 @@ class Verifier:  # high-level class
         self.smith = Smith(self.seeds, self.sizeMax, tiny=self.tiny)
         # build cache for current epoch
         self.smith.cache = self.smith.build_hash_struct('cache')
-        self.smith.cache_next = self.smith.build_hash_struct('cache', )
+        self.smith.cache_next = self.smith.build_hash_struct('cache', self.smith.seeds['back_seed'])
 
     # ultralight verifier link update (link only useful for dev)
     def node_update(self):
@@ -111,18 +111,18 @@ class Verifier:  # high-level class
         elif mix_digest > self.target:
             return False, 'mix digest > target'  # layer 2
         res = serialize_hash(blake3_256(blake3_512(str_to_bytes(self.chainState['header'])
-                                                   + struct.pack("<Q", nonce)) + mix_digest))
+                                                   + struct.pack("<Q", nonce)) + deserialize_hash(mix_digest)))
         if res != s_cmix_hash:
             return False, 's_cmix_hash does not match header and mix digest hash result'  # layer 3
         self.smith.sizeScalarAlt = size_scalar
-        mix_digest_check = self.hashimoto_light(self.smith.get_full_size(size_scalar), self.smith.cache,
-                                  self.chainState['header'], nonce)['mix digest']
+        mix_digest_check = self.hashimoto_light(self.smith.get_full_size(alt_scalar=True),
+                                                self.chainState['header'], nonce)['mix digest']
         if mix_digest_check == mix_digest:
             return True, 'nonce good'  # actual nonce check
         else:
             return False, 'mix digest does not match hashimoto_light result'
 
-    def hashimoto_light(self, full_size, cache, header, nonce):
+    def hashimoto_light(self, full_size, header, nonce):
         return hashimoto(header, nonce, full_size,
                          lambda x: self.smith.calc_dataset_item(x))
 
@@ -435,7 +435,9 @@ def hashimoto(header, nonce, full_size, dataset_lookup):
     w = MIX_BYTES // WORD_BYTES
     mix_hashes = MIX_BYTES // HASH_BYTES
     # combine header+nonce into a 64 byte seed
-    base = str_to_bytes(header) + struct.pack("<Q", nonce)
+    if isinstance(header, str):
+        header = str_to_bytes(header)
+    base = header + struct.pack("<Q", nonce)
     s = blake3_512(base)
     # start the mix with replicated s
     mix = []
