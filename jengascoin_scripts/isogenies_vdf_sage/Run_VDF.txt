@@ -1,0 +1,1 @@
+python3 fpverifiabledelayfunction.py --protocol fp --method kernel4 --pSize p14-toy --nbIterations 100 --loglevel DEBUG

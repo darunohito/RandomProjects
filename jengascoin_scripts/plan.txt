@@ -1,0 +1,3 @@
+mkcache of the max chain size
+post-process the cache items during `calc_dataset_item` with a modulus of `n = CACHE_SIZE_INIT * scalar`
+this means the dataset items won't be (completely) shared between scalar ranges, but verifiers don't have to store more than a single cache file
