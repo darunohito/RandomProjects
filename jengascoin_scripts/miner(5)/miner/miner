@@ -251,6 +251,7 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 		global $outp;
 		global $dbg;
 		$this->best = bchexdec('0x8000000000000000000000000000000000000000000000000000000000000000');
+        $target = bchexdec('0x8000000000000000000000000000000000000000000000000000000000000000'); //init
         $this->allTime = microtime(true);
         $this->beginTime = microtime(true);
         $it = 0;
@@ -265,12 +266,12 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
             if ($current_time - $this->lastUpdate > $update_period) {
                 $hrt = duration(($current_time - $this->beginTime));
                 $hr = $loop_counter / ($current_time - $this->lastUpdate);
+                $net_hr = bcdiv(bcpow(256, 32), bcmul($target, 30000), 3); //convert to KH/s
                 $this->counter += $loop_counter;
                 //$this->avgSpeed = $this->counter / (microtime(true) - $this->allTime);
-                $outp =  "--> ".//Hashrate: ".$this->speed." KH/s   ".
-                    // "Count: $loop_counter  ".
+                $outp =  "--> ".
                     "Hashrate: $hr H/s  ".
-                    //"Average: ".$this->avgSpeed." H/s  ".
+                    "Network HR:  $net_hr KH/s  ".
                     "Total hashes: ".$this->counter."  ".
                     "Time: $hrt  ".
                     "Confirmations/Shares: ".$this->confirmed." ".
@@ -294,7 +295,7 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 
 			$b3 = new BLAKE3();
             $result = $b3->hash($hash,32,'int'); //digest to 32 bytes
-			if(bccomp($result, $this->best) < 0)
+			if(bccomp(strval($result), $this->best) < 0)
 			{	
 				$this->best = $result;
 			}
@@ -315,7 +316,7 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 			}
 			
             // if ($result > 0 && $result <= $our_target) {
-			if (bccomp($result, $our_target) <= 0) {
+			if (bccomp(strval($result), $our_target) <= 0) {
 				$confirmation = $this->submit($nonce, $blakehash);
                 $this->counter += $loop_counter;
                 if ($confirmation) {

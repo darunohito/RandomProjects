@@ -43,7 +43,7 @@ DATASET_PARENTS = 256  # number of parents of each dataset element
 CACHE_ROUNDS = 3  # number of rounds in cache production
 ACCESSES = 64  # number of accesses in hashimoto loop
 JENESIS = 'Satoshi is a steely-eyed missile man'
-MAX_CHAIN_TARGET = 0x8FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF  # modified
+MAX_CHAIN_TARGET = 0x8000000000000000000000000000000000000000000000000000000000000000  # modified
 
 URL_PATH = {
     'MINE_SOLO':        '/api.php?q=getMiningInfo',
