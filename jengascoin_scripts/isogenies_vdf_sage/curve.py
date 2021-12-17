@@ -45,14 +45,14 @@ class Curve:
         return EllipticCurve(self.Fp2, [1-(self.a**2)/3, self.a*(2*(self.a**2)/9-1)/3])
 
     def power_of_2_order_random_point(self, k, extension_field = 2, twist = False) :
-        '''
-            INPUT:
-            * k an integer
-            * extension_field an integer
-            * twist a boolean
-            OUTPUT:
-            * R a point of the curve or its twist, of order 2**k, defined over \F_{p^k}, given in the Montgomery model
-        '''
+        
+            # INPUT:
+            # * k an integer
+            # * extension_field an integer
+            # * twist a boolean
+            # OUTPUT:
+            # * R a point of the curve or its twist, of order 2**k, defined over \F_{p^k}, given in the Montgomery model
+        
         if (k > self.n) :
             raise RuntimeError('there is no point of order 2^%d over Fp^%d' % (k, extension_field))
         cof = (self.p+1) // (2**k)
