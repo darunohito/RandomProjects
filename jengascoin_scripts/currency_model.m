@@ -1,9 +1,9 @@
 clear all;
 graphics_toolkit('fltk')
 
-blocktime = 100; %seconds, technically only affects resolution in this model
+blocktime = 30; %seconds, technically only affects resolution in this model
 ss_growth = 0.08; %steady-state supply growth per year
-period_of_interest = .1; %years, the period which is modelled & plotted
+period_of_interest = .05; %years, the period which is modelled & plotted
 
 ##target_miners = 5000; %miners, target number of solo miners to ensure security
 ##init_miners = 10;
@@ -21,7 +21,7 @@ function log_rate = Log_Growth(block_height, block_time)
 endfunction
 
 function target_ratio = Miner_Check(block_height, block_time)
-  global time_to_security = 0.1; %years, time until target_miners is reached.
+  global time_to_security = 0.25; %years, time until target_miners is reached.
   global seconds_per_year = 365 * 24 * 60 * 60; 
   target_ratio = block_height / (time_to_security * seconds_per_year / block_time);
 endfunction
@@ -60,14 +60,14 @@ end
 close all;
 figure(1);
 subplot(2,1,1);
-plot(reward_mat(1,:), reward_mat(2,:), "linewidth", 2, reward_mat(1,:), reward_mat(3,:), "linewidth", 1.5); hold on;
-plot(reward_mat(1,:), reward_mat(6,:), "linewidth", 1.5, reward_mat(1,:), reward_mat(7,:), "linewidth", 1.5);
-ylim([0 2.5*max(reward_mat(7,:))])
+plot(reward_mat(1,:), reward_mat(2,:), "linewidth", 2, reward_mat(1,:), reward_mat(3,:), "linewidth", 2); hold on;
+plot(reward_mat(1,:), reward_mat(6,:), "linewidth", 2, reward_mat(1,:), reward_mat(7,:), "linewidth", 2);
+%ylim([0 2.5*max(reward_mat(7,:))])
 xlabel("days since launch"); ylabel("reward size (Jengascoin)");
 legend("Log rate", "RC conditioned", "Log rate+SS", "RC cond.+SS");
 
 subplot(2,1,2); 
-plot(reward_mat(1,:), reward_mat(4,:), "linewidth", 1.5, reward_mat(1,:), reward_mat(5,:), "linewidth", 1.5); hold on;
-plot(reward_mat(1,:), reward_mat(8,:), "linewidth", 1.5, reward_mat(1,:), reward_mat(9,:), "linewidth", 1.5);
+plot(reward_mat(1,:), reward_mat(4,:), "linewidth", 2, reward_mat(1,:), reward_mat(5,:), "linewidth", 2); hold on;
+plot(reward_mat(1,:), reward_mat(8,:), "linewidth", 2, reward_mat(1,:), reward_mat(9,:), "linewidth", 2);
 xlabel("days since launch"); ylabel("total supply (Jengascoin)");
 legend("Log supply", "RC cond. supply", "Log supply+SS", "RC cond. supply+SS");

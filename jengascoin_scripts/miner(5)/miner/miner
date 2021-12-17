@@ -283,19 +283,18 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
             $nonce = base64_encode(openssl_random_pseudo_bytes(32));
             $nonce = preg_replace("/[^a-zA-Z0-9]/", "", $nonce);
             $base = $this->publicKey."-".$nonce."-".$this->block."-".$this->difficulty;
+            
             $b3 = new BLAKE3();	
             $blakehash = $b3->hash($base,'64');			
 			$hash = $base.$blakehash;
-
-			// hash the base 8 times
-			for ($i = 0; $i < 7; $i++) {
-				$b3 = new BLAKE3();
-				$hash = $b3->hash($hash,'64','bin');
-			} 
-
-			$b3 = new BLAKE3();
+            $b3 = new BLAKE3();
             $result = $b3->hash($hash,32,'int'); //digest to 32 bytes
+<<<<<<< Updated upstream
 			if(bccomp(strval($result), $this->best) < 0)
+=======
+            
+			if(bccomp($result, $this->best) < 0)
+>>>>>>> Stashed changes
 			{	
 				$this->best = $result;
 			}
