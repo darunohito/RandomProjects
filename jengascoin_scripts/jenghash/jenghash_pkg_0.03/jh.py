@@ -82,7 +82,7 @@ if __name__ == "__main__":
 class Verifier:  # high-level class
 
     # must be initialized with either local chainState dictionary or node_url
-    def __init__(self, size_max=1, chain_state=None, node_url=None, tiny=False):
+    def __init__(self, size_max=1, chain_state=None, node_url=None, alt_seedblock=False, tiny=False):
         self.tiny = tiny
         self.sizeMax = size_max
         if isinstance(chain_state, dict):
@@ -94,7 +94,10 @@ class Verifier:  # high-level class
         print("Initial Chain State/Verifier Info: \n", self.chainState)
         self.target = get_target(self.chainState['diff_int'])
         # init verifier smith
-        self.seeds = get_seedset(self.chainState['block'])
+        if isinstance(alt_seedblock, int):
+            self.seeds = get_seedset(alt_seedblock)
+        else:
+            self.seeds = get_seedset(self.chainState['block'])
         self.smith = Smith(self.seeds, self.sizeMax, tiny=self.tiny)
         # build cache for current epoch
         self.smith.cache = self.smith.build_hash_struct('cache')
@@ -131,7 +134,7 @@ class Miner:  # high-level class
 
     # must be initialized with either local chainState dictionary or node_url
     def __init__(self, size_scalar, public_key, private_key=None,
-                 chain_state=None, node_url=None, cores=1, init_build=False, tiny=False):
+                 chain_state=None, node_url=None, cores=1, init_build=False, alt_seedblock=False, tiny=False):
         # init static vars
         self.tiny = tiny
         self.creds = {'pubKey': public_key, 'priKey': private_key}
@@ -145,7 +148,10 @@ class Miner:  # high-level class
         print("Initial Chain State/Miner Info: \n", self.chainState)
         self.target = get_target(self.link.chainState['diff_int'], int(MAX_CHAIN_TARGET))
         # init miner smith
-        self.seeds = get_seedset(self.link.chainState['block'])
+        if isinstance(alt_seedblock, int):
+            self.seeds = get_seedset(alt_seedblock)
+        else:
+            self.seeds = get_seedset(self.link.chainState['block'])
         self.smith = Smith(self.seeds, self.specs['sizeScalar'], self.creds['pubKey'],
                            self.specs['cores'], tiny=self.tiny)
         if init_build:

@@ -55,9 +55,9 @@ if mode == 'instant' or mode == 'i':
     random_block = EPOCH_LENGTH*2 + 1
 else:
     random_block = randint(EPOCH_LENGTH+1, 10000*EPOCH_LENGTH)
-seed1 = deserialize_hash(get_seedhash(random_block))
+seed1 = deserialize_hash(get_seedhash(random_block - EPOCH_LENGTH))
 seeds = get_seedset(random_block)
-seed2 = seeds['back_seed']
+seed2 = seeds['front_seed']
 print(f"Seedset {random_block}: \n", seeds)
 assert seed1 == seed2
 assert isinstance(seed2, list)
@@ -66,8 +66,8 @@ print("Seed match tests passed!")
 
 # initialize the rest of the classes separately
 smith = Smith(seeds, cores=cores, tiny=True)
-miner = Miner(1, 'pubkey', node_url=node, tiny=True)
-verifier = Verifier(4, node_url=node, tiny=True)
+miner = Miner(1, 'pubkey', node_url=node, alt_seedblock=random_block, tiny=True)
+verifier = Verifier(1, node_url=node, alt_seedblock=random_block, tiny=True)
 
 # build and load caches, check for match
 print("making smith.cache")

@@ -1,9 +1,9 @@
 clear all;
 graphics_toolkit('fltk')
 
-blocktime = 30; %seconds, technically only affects resolution in this model
+blocktime = 300; %seconds, technically only affects resolution in this model
 ss_growth = 0.08; %steady-state supply growth per year
-period_of_interest = .05; %years, the period which is modelled & plotted
+period_of_interest = .5; %years, the period which is modelled & plotted
 
 ##target_miners = 5000; %miners, target number of solo miners to ensure security
 ##init_miners = 10;
