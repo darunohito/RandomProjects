@@ -215,7 +215,6 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 		curl_close($curl);
 		
 		$data = json_decode($res, true);
-
 		$max_target = bchexdec('0x8000000000000000000000000000000000000000000000000000000000000000');
 		$target = bcsub($max_target, $this->difficulty);
         if ($data['status'] == self::NODE_STATUS_OK) {
@@ -228,9 +227,6 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 			$this->update();
             return true;
         } else {
-			echo "status: ".$data['status'];
-			echo " data: ".$data['data'];
-			echo " height: ".$this->height;
 			if ($this->type == self::MODE_POOL) {
 				$share_time = time() - $noshare_time;
 				$pooltarget = pooltarget($share_time,$pooltarget);
@@ -260,7 +256,7 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
         $this->beginTime = microtime(true);
         $it = 0;
         $this->counter = 0;
-        $update_period = 3;
+        $update_period = 2;
         $loop_counter = 0;
 		$noshare_time = time();
         $start = microtime(true);
@@ -287,19 +283,19 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
             $nonce = base64_encode(openssl_random_pseudo_bytes(32));
             $nonce = preg_replace("/[^a-zA-Z0-9]/", "", $nonce);
             $base = $this->publicKey."-".$nonce."-".$this->block."-".$this->difficulty;
+            
             $b3 = new BLAKE3();	
             $blakehash = $b3->hash($base,'64');			
 			$hash = $base.$blakehash;
-			
             $b3 = new BLAKE3();
             $result = $b3->hash($hash,32,'int'); //digest to 32 bytes
-			$cmp = bccomp($result, "$this->best");
-			if($cmp < 0)
+
+			if(bccomp($result, $this->best) < 0)
 			{	
 				$this->best = $result;
 			}
 			$max_target = bchexdec('0x8000000000000000000000000000000000000000000000000000000000000000');
-			$target = bcsub("$max_target", "$this->difficulty");
+			$target = bcsub($max_target, $this->difficulty);
             
 			if(!isset($pooltarget))
 			{
@@ -315,7 +311,7 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
 			}
 			
             // if ($result > 0 && $result <= $our_target) {
-			if (bccomp("$result", "$our_target") <= 0) {
+			if (bccomp(strval($result), $our_target) <= 0) {
 				$confirmation = $this->submit($nonce, $blakehash);
                 $this->counter += $loop_counter;
                 if ($confirmation) {
