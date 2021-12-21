@@ -108,7 +108,7 @@ class Verifier:  # high-level class
         self.chainState = self.link.get_miner_input()
 
     # mix_digest, s_cmix_hash, nonce, header, and size_scalar are miner inputs to the verifier
-    def verify(self, mix_digest, s_cmix_hash, nonce, header, size_scalar, key=None):
+    def verify(self, mix_digest, s_cmix_hash, nonce, header, size_scalar=1, key=None):
         if header != self.chainState['header']:
             return False, 'header does not match'  # DDoS protection layer 1
         elif mix_digest > self.target:
@@ -171,16 +171,18 @@ class Miner:  # high-level class
 
 class Link:  # low-level class, for linking miners/verifiers to nodes/peers
 
-    def __init__(self, link_url):
+    def __init__(self, link_url=None, local=False):
         self.url = link_url
         self.header = ''
-        self.chainState = self.get_miner_input()
+        self.local = local
+        self.chainState = {}
+        if not self.local:
+            self.chainState = self.get_miner_input()
 
     def get_miner_input(self):
         return self.parse_mining_input(self.node_request(URL_PATH['MINE_SOLO'])['data'])
 
-    @staticmethod
-    def parse_mining_input(miner_input):
+    def parse_mining_input(self, miner_input):
         miner_input_parsed = {
             'diff': hex(int(miner_input['difficulty'])),
             'diff_int': int(miner_input['difficulty']),
@@ -190,6 +192,8 @@ class Link:  # low-level class, for linking miners/verifiers to nodes/peers
         }
         hdr = encode_int(int(miner_input_parsed['header_hex'], base=16))
         miner_input_parsed['header'] = '\x00' * (32 - len(hdr)) + hdr
+        if self.local:
+            self.chainState = miner_input_parsed
         return miner_input_parsed
 
     def get_node_block(self, block_height):
