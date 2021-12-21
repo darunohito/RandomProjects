@@ -454,7 +454,7 @@ class BLAKE3
 			return bin2hex($XofHash); 
 			} 
 		else if (strcmp($out_format,'int') == 0) {
-			return decode_int($XofHash);	
+			return self::decode_int($XofHash);	
 			}
 		else {
 			die('invalid format argument to XOF_output / blake3 function');
@@ -505,16 +505,17 @@ class BLAKE3
 					
 		return self::XOF_output($hash,$XOF_digest_length,$XOF_out_format);
 		}
+        
+        function decode_int($s)
+        {
+            // Unencode an integer x from a string using a big-endian scheme 
+            $x = '';
+            for ($i=0; $i<strlen($s); $i++)
+            {
+                $x = bcmul($x,'256');
+                $x = bcadd($x, ord($s[$i]));
+            }
+            return $x;
+        }
 	}
 
-function decode_int($s)
-{
-    // Unencode an integer x from a string using a big-endian scheme 
-    $x = '';
-    for ($i=0; $i<strlen($s); $i++)
-	{
-        $x = bcmul($x,'256');
-        $x = bcadd($x, ord($s[$i]));
-	}
-    return $x;
-}
