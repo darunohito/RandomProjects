@@ -261,16 +261,35 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
         $it = 0;
         $this->counter = 0;
         $update_period = 3;
+		$net_hr_period = 200;
+		$net_hr_array = array_fill(0, $net_hr_period, '0.1');
         $loop_counter = 0;
+		$update_counter = 0;
+		$hr_sum = 0;
 		$noshare_time = time();
         $start = microtime(true);
         while (1) {
             $loop_counter++;
             $current_time = microtime(true);
             if ($current_time - $this->lastUpdate > $update_period) {
-                $hrt = duration(($current_time - $this->beginTime));
+				$update_counter++;
+                $hrt = duration(($current_time - $this->beginTime));		
                 $hr = $loop_counter / ($current_time - $this->lastUpdate);
-                $net_hr = bcdiv(bcpow(256, 32), bcmul($target, 30000), 3); //convert to KH/s
+				for ($i = min($update_counter, $net_hr_period)-2; $i >= 0; $i--) {
+					$net_hr_array[$i+1] = $net_hr_array[$i];
+					//echo $net_hr_array[$i]."\n";
+					}
+				if (isset($net_hr_array[$net_hr_period])) unset($net_hr_array[$net_hr_period]);
+				$net_hr_array[0] = bcdiv(bcpow(256, 32), bcmul($target, 30000), 3); //convert to KH/s
+				$hr_sum = '0';
+				//echo $hr_sum.", ";
+				for ($i = 0; $i < min($update_counter, $net_hr_period); $i++) {
+					$hr_sum = bcadd($hr_sum,$net_hr_array[$i], 3);
+				}
+				//echo min($update_counter, $net_hr_period).", ".$hr_sum;
+				
+				$net_hr = bcdiv($hr_sum, min($update_counter, $net_hr_period), 2); 
+		
                 $this->counter += $loop_counter;
                 //$this->avgSpeed = $this->counter / (microtime(true) - $this->allTime);
                 $outp =  "--> ".
