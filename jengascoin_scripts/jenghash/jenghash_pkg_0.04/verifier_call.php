@@ -1,4 +1,4 @@
-<?
+<?php
 
 /*
 class Verifier:  # high-level class
@@ -16,12 +16,18 @@ $difficulty = '57894484195676894936233969324885049345274108201212047720873616043
 $block = 'z9epQ9ijVhrHYpyFMANKqUi9xhSyEQwKeuyVRXSYWdczX8siZXXVvJeVS4bG5tfk5GdvkS944P5eNJxoPZ6YUBN';
 $height = '7202';
 
-$mix_digest = '£yÙ&naH¯8Eq÷NµU­³	±sÏÕòî]ÿ';
-$result = '¦Áñ;aÅTmª~w`1Õç"¥=ÈÃ';
+//$mix_digest = '£yÙ&naH¯8Eq÷NµU­³	±sÏÕòî]ÿ';
+//$result = '¦Áñ;aÅTmª~w`1Õç"¥=ÈÃ';
+$mix_digest = bin2hex('£yÙ&naH¯8Eq÷NµU­³	±sÏÕòî]ÿ');
+$result = bin2hex('¦Áñ;aÅTmª~w`1Õç"¥=ÈÃ');
 $nonce = '7609359626069789394';
 
+$call_verifier = sprintf("python verify.py %s %s %s %s %s %s", $difficulty, $block, $height, $mix_digest, $result, $nonce);
+echo "\noutput: ".$call_verifier."\n\n";
 
 $ret_code = 0;
-exec('python verify.py', $output, $ret_code);
+exec($call_verifier, $ret_code);
 
 echo "php ret_code: $ret_code";
+
+?>

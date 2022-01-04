@@ -1,4 +1,5 @@
 from jh import *
+import sys
 
 
 # res, info = verifier.verify(hash1['mix digest'], hash2['result'], nonce,
@@ -19,6 +20,7 @@ chainState_In = {
 link = Link(local=True)
 link.parse_mining_input(chainState_In)
 verifier = Verifier(1, chain_state=link.chainState, tiny=True)
+
 
 
 mix_digest = sys.argv[4]
