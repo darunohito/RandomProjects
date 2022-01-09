@@ -44,6 +44,7 @@ CACHE_ROUNDS = 3  # number of rounds in cache production
 ACCESSES = 64  # number of accesses in hashimoto loop
 JENESIS = 'Satoshi is a steely-eyed missile man'
 MAX_CHAIN_TARGET = 0x8000000000000000000000000000000000000000000000000000000000000000  # modified
+# MAX_CHAIN_TARGET = 2**512 - 1
 
 URL_PATH = {
     'MINE_SOLO':        '/api.php?q=getMiningInfo',
@@ -110,8 +111,12 @@ class Verifier:  # high-level class
     # mix_digest, s_cmix_hash, nonce, header, and size_scalar are miner inputs to the verifier
     def verify(self, mix_digest, s_cmix_hash, nonce, header, size_scalar=1, key=None):
         if header != self.chainState['header']:
-            return False, 'header does not match'  # DDoS protection layer 1
+            print(f"\nminer:    {header!r}\nverifier: {self.chainState['header']!r}")
+            return False, f"header does not match"  # DDoS protection layer 1
         elif mix_digest > self.target:
+            print(f"\nmix_digest int: {decode_int(mix_digest)}\n..."
+                  f"target int:     {decode_int(self.target)}\n..."
+                  f"max target:     {MAX_CHAIN_TARGET}")
             return False, 'mix digest > target'  # layer 2
         res = serialize_hash(blake3_256(blake3_512(str_to_bytes(self.chainState['header'])
                                                    + struct.pack("<Q", nonce)) + deserialize_hash(mix_digest)))

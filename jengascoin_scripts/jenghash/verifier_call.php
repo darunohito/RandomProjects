@@ -1,4 +1,4 @@
-<?
+<?php
 
 /*
 class Verifier:  # high-level class
@@ -25,3 +25,4 @@ $ret_code = 0;
 exec('python verify.py', $output, $ret_code);
 
 echo "php ret_code: $ret_code";
+?>

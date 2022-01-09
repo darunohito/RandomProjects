@@ -18,15 +18,17 @@ $height = '7202';
 
 //$mix_digest = '£yÙ&naH¯8Eq÷NµU­³	±sÏÕòî]ÿ';
 //$result = '¦Áñ;aÅTmª~w`1Õç"¥=ÈÃ';
-$mix_digest = bin2hex('£yÙ&naH¯8Eq÷NµU­³	±sÏÕòî]ÿ');
-$result = bin2hex('¦Áñ;aÅTmª~w`1Õç"¥=ÈÃ');
+$mix_digest = '0x'.bin2hex('£yÙ&naH¯8Eq÷NµU­³	±sÏÕòî]ÿ');
+$result = '0x'.bin2hex('¦Áñ;aÅTmª~w`1Õç"¥=ÈÃ');
 $nonce = '7609359626069789394';
+$header = $block;
 
-$call_verifier = sprintf("python verify.py %s %s %s %s %s %s", $difficulty, $block, $height, $mix_digest, $result, $nonce);
+$call_verifier = sprintf("python verify.py %s %s %s %s %s %s %s", $difficulty, $block, $height, $mix_digest, $result, $nonce, $header);
 echo "\noutput: ".$call_verifier."\n\n";
 
 $ret_code = 0;
-exec($call_verifier, $ret_code);
+//exec($call_verifier, $ret_code);
+passthru($call_verifier, $ret_code);
 
 echo "php ret_code: $ret_code";
 
