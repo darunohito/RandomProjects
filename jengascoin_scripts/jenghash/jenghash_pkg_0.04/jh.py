@@ -113,19 +113,19 @@ class Verifier:  # high-level class
         if header != self.chainState['header']:
             print(f"\nminer:    {header!r}\nverifier: {self.chainState['header']!r}")
             return False, f"header does not match"  # DDoS protection layer 1
-        elif mix_digest > self.target:
-            print(f"\nmix_digest int: {decode_int(mix_digest)}\n..."
+        elif encode_int(mix_digest) > self.target:
+            print(f"\nmix_digest int: {mix_digest}\n..."
                   f"target int:     {decode_int(self.target)}\n..."
                   f"max target:     {MAX_CHAIN_TARGET}")
             return False, 'mix digest > target'  # layer 2
         res = serialize_hash(blake3_256(blake3_512(str_to_bytes(self.chainState['header'])
                                                    + struct.pack("<Q", nonce)) + deserialize_hash(mix_digest)))
-        if res != s_cmix_hash:
+        if res != encode_int(s_cmix_hash):
             return False, 's_cmix_hash does not match header and mix digest hash result'  # layer 3
         self.smith.sizeScalarAlt = size_scalar
         mix_digest_check = self.hashimoto_light(self.smith.get_full_size(alt_scalar=True),
                                                 self.chainState['header'], nonce, key)['mix digest']
-        if mix_digest_check == mix_digest:
+        if decode_int(mix_digest_check) == mix_digest:
             return True, 'nonce good'  # actual nonce check
         else:
             return False, 'mix digest does not match hashimoto_light result'
