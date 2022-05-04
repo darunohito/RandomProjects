@@ -1,4 +1,4 @@
-function radio = coopTXparams(nodes,tgts)
+function radio = coopTRXparams(nodes,tgts)
   c = 299792458;
   
   nNodes = length(nodes.xi); nTgts = size(tgts.aer,1);

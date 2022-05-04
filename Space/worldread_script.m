@@ -17,7 +17,7 @@ end
 
 [nodes, h] = generateNodes(bands,info,locationWindow,nNodes,'plot');
 [tgts, h] = generateTargets(tgtMinElevationDeg,tgtRangeWindow,nodes.center,nTgts,'plot',h); 
-radio = coopTXparams(nodes, tgts);
+radio = coopTRXparams(nodes, tgts);
 
 % should I solve the analytical solutions for each radiator at each point in space?
 % plot power density in free space, with superimposed beams?
