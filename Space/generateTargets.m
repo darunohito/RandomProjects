@@ -15,7 +15,7 @@ function [tgt, h] = generateTargets(minElevationDeg,rangeWindow,rootLocation,nTg
   tgt.aer(:,3) = rangeWindow(1) + (rand(nTgts,1) * range(rangeWindow));
   
   tgt.geodetic = zeros(nTgts,3);
-  [tgt.geodetic(:,1),tgt.geodetic(:,2),tgt.geodetic(:,3)] = aer2geodetic (tgt.aer(:,1),tgt.aer(:,2), tgt.aer(:,3), rootLocation(2), rootLocation(1), rootLocation(3),'wgs84','degrees'); %function appears to not handle radian arguments
+  [tgt.geodetic(:,1),tgt.geodetic(:,2),tgt.geodetic(:,3)] = aer2geodetic (tgt.aer(:,1),tgt.aer(:,2), tgt.aer(:,3), rootLocation(1), rootLocation(2), rootLocation(3),'wgs84','degrees'); %function appears to not handle radian arguments
   
   if plotMode == 1
     figure(h); hold on;
@@ -23,7 +23,5 @@ function [tgt, h] = generateTargets(minElevationDeg,rangeWindow,rootLocation,nTg
   else
     h = 0;
   endif
-  
-  
-  
+
 endfunction
