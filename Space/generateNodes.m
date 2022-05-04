@@ -16,9 +16,6 @@ function [nodes, h] = generateNodes(bands,info,locationWindow,nNodes,varargin)
   nodes.yi = randi(size(cbands.data,1),nNodes,1);
   nodes.geodetic = [nodes.lat(nodes.yi)', nodes.long(nodes.xi)',...
                     cbands.data(sub2ind(size(cbands.data),nodes.yi,nodes.xi))];
-##  nodes.x = nodes.long(nodes.xi);
-##  nodes.y = nodes.lat(nodes.yi);
-##  nodes.z = cbands.data(sub2ind(size(cbands.data),nodes.yi,nodes.xi))';
   nodes.center = [min(nodes.long) + range(nodes.long)/2, min(nodes.lat) + range(nodes.lat)/2];
   nodes.center = [nodes.center, interp2(nodes.long,nodes.lat,cbands.data,nodes.center(1), nodes.center(2))];
   
