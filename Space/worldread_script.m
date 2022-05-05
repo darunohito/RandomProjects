@@ -7,7 +7,7 @@ nNodes = 4; nTgts = 2; fCenter = 100e6;
 ROI = 1000; %radial meters around radiation pattern main lobes and target
 azimuthSteps = 16;
 elevationSteps = 16;
-N = 100;
+N = 25; simRange = 5;
 
 function rho = genericPattern(theta)
   rho = abs(sinc(theta));
@@ -19,6 +19,10 @@ end
 
 function pLog = lin2log(pLin)
   pLog = 10*log10(pLin);
+endfunction
+
+function pLin = log2lin(pLog)
+  pLin = 10.^(pLog/10);
 endfunction
 
 
@@ -35,27 +39,35 @@ if ~exist('bands') || ~strcmp(bands.name,worldFileName)
   bands.name = worldFileName;
 end
 
-[nodes, h] = generateNodes(bands,info,powerWindow,locationWindow,nNodes,'plot');
-[tgts, h] = generateTargets(tgtMinElevationDeg,tgtRangeWindow,nodes.center,nTgts,'plot',h); 
+clear nodes, tgts;
+[nodes, h] = generateNodes(bands,info,powerWindow,locationWindow,nNodes);
+[tgts, h] = generateTargets(tgtMinElevationDeg,tgtRangeWindow,nodes.center,nTgts); 
 radio = coopTRXparams(nodes, tgts);
 
-mesh.geodetic = zeros(1,3,nTgts);
-mesh.azi = linspace(0,360*(1-1/azimuthSteps),azimuthSteps);
-mesh.ele = linspace(90*(1-1/elevationSteps),0,elevationSteps);
-mesh.searchPattern = [repmat(mesh.azi,elevationSteps,1)' repmat(mesh.ele,azimuthSteps,1)];
-mesh.search = zeros(nNodes,elevationSteps,azimuthSteps);
+
+##mesh.azi = linspace(0,360*(1-1/azimuthSteps),azimuthSteps);
+##mesh.ele = linspace(90*(1-1/elevationSteps),0,elevationSteps);
+##mesh.searchPattern = [repmat(mesh.azi,elevationSteps,1)' repmat(mesh.ele,azimuthSteps,1)];
+##mesh.search = zeros(nNodes,elevationSteps,azimuthSteps);
 
 
-mesh.geodetic = linspace([nodes.lat(1) nodes.long(1) min(nodes.geodetic(:,3))],...
-                         [nodes.lat(end) nodes.long(end) max(nodes.geodetic(:,3))],N);
-mesh.powers = zeros(N,N,N,nNodes,nTgts);
-mesh.phases = zeros(N,N,N,nNodes,nTgts);
+##mesh.geodetic = linspace([nodes.lat(1) nodes.long(1) min(nodes.geodetic(:,3))],...
+##                         [nodes.lat(end) nodes.long(end) max(nodes.geodetic(:,3))],N);
+%for ii = 1:nNodes
+clear mesh
 
+
+for ii = 1:1
+  [lat0, lon0, alt0] = enu2geodetic(-simRange/2,-simRange/2,-simRange/2,nodes.geodetic(ii,1),nodes.geodetic(ii,2),nodes.geodetic(ii,3),'wgs84','degrees');
+  [lat1, lon1, alt1] = enu2geodetic(simRange/2,simRange/2,simRange/2,nodes.geodetic(ii,1),nodes.geodetic(ii,2),nodes.geodetic(ii,3),'wgs84','degrees');
+  mesh.geodetic(:,(ii-1)*N+1:ii*N) = linspace([lat0, lon0, alt0], [lat1, lon1, alt1],N);
+endfor
+
+
+mesh.geodetic = permute(repmat(mesh.geodetic,1,1,N,N),[2 3 4 1]);
 lambda = c / fCenter;
 
-
-
-[mesh.aer(1,:,:,:,:),mesh.aer(2,:,:,:,:),mesh.aer(3,:,:,:,:)] = geodetic2aer(repmat(mesh.geodetic(1,:),nNodes,1,N,N), repmat(mesh.geodetic(1,:),nNodes,1,N,N), repmat(mesh.geodetic(1,:),nNodes,1,N,N), repmat(nodes.geodetic(:,1),1,N,N,N),repmat(nodes.geodetic(:,2),1,N,N,N),repmat(nodes.geodetic(:,3),1,N,N,N),'wgs84','degrees');
+[mesh.aer(1,:,:,:,:),mesh.aer(2,:,:,:,:),mesh.aer(3,:,:,:,:)] = geodetic2aer(repmat(mesh.geodetic(:,:,:,1),1,1,1,nNodes), repmat(mesh.geodetic(:,:,:,2),1,1,1,nNodes), repmat(mesh.geodetic(:,:,:,3),1,1,1,nNodes), permute(repmat(nodes.geodetic(:,1),1,N,N,N),[2 3 4 1]),permute(repmat(nodes.geodetic(:,2),1,N,N,N),[2 3 4 1]),permute(repmat(nodes.geodetic(:,3),1,N,N,N),[2 3 4 1]),'wgs84','degrees');
 
 [mesh.enu(1,:,:,:,:),mesh.enu(2,:,:,:,:),mesh.enu(3,:,:,:,:)] = aer2enu(mesh.aer(1,:,:,:,:),mesh.aer(2,:,:,:,:),mesh.aer(3,:,:,:,:)); % m, cartesian displacement from each node to each mesh point
 
@@ -64,34 +76,20 @@ radio.enuNormZero = repmat(radio.enuNormZero,1,1,1,N,N,N);
 radio.enuNormZero = permute(radio.enuNormZero,[3 1 4 5 6 2]);
 
 %radian difference from meshpoint to TX main beams
-mesh.alpha = acos(dot(repmat(mesh.enuNormZero,1,1,1,1,1,nTgts),radio.enuNormZero));
-
+mesh.alpha = acos(dot(repmat(mesh.enuNormZero,1,1,1,1,1,nTgts),permute(radio.enuNormZero,[1 3 4 5 2 6])));
 mesh.alpha = permute(mesh.alpha,[6 2 3 4 5 1]);
 
 %need to add in actual antenna gains (not just attenuation)
-FSPL = fspl(mesh.aer(3,:,:,:,:),lambda);
-
-mesh.logPower = lin2log(genericPattern(mesh.alpha) .* repmat(nodes.powers',nTgts,1,N,N,N)) - repmat(FSPL,nTgts,1,1,1,1);
-
+mesh.FSPL = log2lin(fspl(mesh.aer(3,:,:,:,:),lambda));
+mesh.power = genericPattern(mesh.alpha) .* repmat(nodes.powers',nTgts,1,N,N,N) ./ repmat(mesh.FSPL,nTgts,1,1,1,1);
 
 
-##for ii = 1:nTgts
-##  mesh.geodetic(1,:,ii) = nodes.center;
-##  rr_n = repmat(0.001,nNodes,1); rr_t = 0.001;
-##  basepoint = nodes.geodetic(:,:);
-##  while min(rr_n) < ROI
-##    
-##    [mesh.geodetic(end+1:end+nNodes,1,ii),mesh.geodetic(end+1:end+nNodes,2,ii),mesh.geodetic(end+1:end+nNodes,3,ii)] = aer2geodetic (radio.aerVectors(:,1),radio.aerVectors(:,2), rr_n, basepoint(:,1),basepoint(:,2),basepoint(:,3),'wgs84','degrees'); 
-##    
-##    [basepoint(:,1),basepoint(:,2),basepoint(:,3)]= aer2geodetic (radio.aerVectors(:,1),radio.aerVectors(:,2), rr_n, basepoint(:,1),basepoint(:,2),basepoint(:,3),'wgs84','degrees'); 
-##  
-##  end
-##  while rr_t < ROI
-##    
-##  endwhile
-##  %geodetic2aer(nodes.geodetic(:,1),nodes.geodetic(:,2),nodes.geodetic(:,3),...
-##end
+mesh.phases = 2*pi * mod(repmat(mesh.aer(3,:,:,:,:),2,1,1,1,1) + ...
+              repmat(radio.delays',1,1,N,N,N),lambda) / lambda;
 
+mesh.fieldStr = permute(sum(abs(mesh.phases .* mesh.power),2),[3 4 5 1 2]);
+
+%isosurface(mesh.fieldStr(:,:,:,1))
 
              
 
