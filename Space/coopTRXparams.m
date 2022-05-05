@@ -10,7 +10,7 @@ function radio = coopTRXparams(nodes,tgts)
       nodes.geodetic(ii,1),nodes.geodetic(ii,2),nodes.geodetic(ii,3),'wgs84','degrees');
   end
   
-  [radio.enuVectors(:,:,1),radio.enuVectors(:,:,2),radio.enuVectors(:,:,3)] = aer2enu(radio.aerVectors(:,:,1),radio.aerVectors(:,:,2),radio.aerVectors(:,:,3))
+  [radio.enuVectors(:,:,1),radio.enuVectors(:,:,2),radio.enuVectors(:,:,3)] = aer2enu(radio.aerVectors(:,:,1),radio.aerVectors(:,:,2),radio.aerVectors(:,:,3));
   
   radio.enuNormZero = radio.enuVectors ./ repmat(radio.aerVectors(:,:,3),1,1,3);
   

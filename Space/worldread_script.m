@@ -1,5 +1,4 @@
 % pkg load mapping
-% pkg load parallel
 tic
 close all
 
@@ -54,32 +53,26 @@ mesh.phases = zeros(N,N,N,nNodes,nTgts);
 
 lambda = c / fCenter;
 
-parfor ii = mesh.geodetic(1,:)
-  for jj = mesh.geodetic(2,:)
-    for kk = mesh.geodetic(3,:)
-      % mesh.nodeAer = geodetic2aer(ii, jj, kk, nodes.geodetic(:,1),nodes.geodetic(:,2),nodes.geodetic(:,3),'wgs84','degrees');   
-      
-      [t1,t2,t3] = geodetic2aer(repmat(ii,nNodes,1), repmat(jj,nNodes,1), repmat(kk,nNodes,1), nodes.geodetic(:,1),nodes.geodetic(:,2),nodes.geodetic(:,3),'wgs84','degrees');
-      
-      [xm,ym,zm] = aer2enu(t1,t2,t3); % m, cartesian displacement from each node to each mesh point
-      
-      
-      alpha = zeros(nTgts,nNodes); %radian difference from meshpoint main beams
-      for ll = 1:nTgts
-        alpha(ll,:) = acos(dot(([xm,ym,zm]./repmat(t3,1,3))',[radio.enuNormZero(:,ll,1),radio.enuNormZero(:,ll,2),radio.enuNormZero(:,ll,3)]'))';
-      end
-      gain = genericPattern(alpha); % linear power gain from antenna
-      power = gain .* repmat(nodes.powers',nTgts,1);
-      logPower = lin2log(power);
-      FSPL = fspl(t3,lambda);
-      
-      mesh.logPower = logPower - repmat(FSPL',nTgts,1);
-##      for ll = 1:nTgts
-##        
-##      endfor
-    endfor
-  endfor
-endparfor
+
+
+[mesh.aer(1,:,:,:,:),mesh.aer(2,:,:,:,:),mesh.aer(3,:,:,:,:)] = geodetic2aer(repmat(mesh.geodetic(1,:),nNodes,1,N,N), repmat(mesh.geodetic(1,:),nNodes,1,N,N), repmat(mesh.geodetic(1,:),nNodes,1,N,N), repmat(nodes.geodetic(:,1),1,N,N,N),repmat(nodes.geodetic(:,2),1,N,N,N),repmat(nodes.geodetic(:,3),1,N,N,N),'wgs84','degrees');
+
+[mesh.enu(1,:,:,:,:),mesh.enu(2,:,:,:,:),mesh.enu(3,:,:,:,:)] = aer2enu(mesh.aer(1,:,:,:,:),mesh.aer(2,:,:,:,:),mesh.aer(3,:,:,:,:)); % m, cartesian displacement from each node to each mesh point
+
+mesh.enuNormZero = mesh.enu ./ repmat(mesh.aer(3,:,:,:,:),3,1,1,1,1);
+radio.enuNormZero = repmat(radio.enuNormZero,1,1,1,N,N,N);
+radio.enuNormZero = permute(radio.enuNormZero,[3 1 4 5 6 2]);
+
+%radian difference from meshpoint to TX main beams
+mesh.alpha = acos(dot(repmat(mesh.enuNormZero,1,1,1,1,1,nTgts),radio.enuNormZero));
+
+mesh.alpha = permute(mesh.alpha,[6 2 3 4 5 1]);
+
+%need to add in actual antenna gains (not just attenuation)
+FSPL = fspl(mesh.aer(3,:,:,:,:),lambda);
+
+mesh.logPower = lin2log(genericPattern(mesh.alpha) .* repmat(nodes.powers',nTgts,1,N,N,N)) - repmat(FSPL,nTgts,1,1,1,1);
+
 
 
 ##for ii = 1:nTgts
