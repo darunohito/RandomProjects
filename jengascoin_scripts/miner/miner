@@ -126,9 +126,9 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
         $extra = "";
         if ($this->type == self::MODE_POOL) {
             $extra = "&worker=".$this->worker."&address=".$this->privateKey."&hashrate=".$this->speed;
-			$res = file_get_contents($this->node."/mine.php?q=info".$extra);	
+			$res = file_get_contents($this->node."/mine.php/info".$extra);	
 		} else {
-			$res = file_get_contents($this->node."/api.php?q=getMiningInfo".$extra);		
+			$res = file_get_contents($this->node."api.php/getMiningInfo".$extra);		
         }
 		$info = json_decode($res, true);
         if ($info['status'] != self::NODE_STATUS_OK) {
@@ -199,9 +199,9 @@ For Pool mining: ./miner pool <pool-address> <your-address>\n\n";
         );
 		
 		if ($this->type == self::MODE_POOL) {
-			$url = $this->node."/mine.php?q=submitNonce";	
+			$url = $this->node."/mine.php/submitNonce";	
 		} else {
-			$url = $this->node."/api.php?q=submitNonce";		
+			$url = $this->node."api.php/submitNonce";		
         }
 		$curl = curl_init($url);
 		curl_setopt($curl, CURLOPT_URL, $url);

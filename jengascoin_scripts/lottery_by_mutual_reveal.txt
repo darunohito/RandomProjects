@@ -1,0 +1,30 @@
+alternative to proof-of-delay for fair lottery
+
+This concept relies on the following design requirements:
+(1) fixing the lottery is not profitable
+(2) risk of withholding a peer's random number is mitigated
+
+Order of operations:
+(1) miners submit the hash of a signed random number, along with an ante to a burn address
+	submission: hash(sign([number],[privatekey]))
+(2) those hashes are recorded in a new field in the block header
+(3) once that block is confirmed, the miners reveal their random numbers, which are verified through a simple signature check and hash
+(4) if a user who submitted a hash for the lottery fails to submit a random number, this must be punished/fined/etc, since this works out to fixing the lottery. 
+	This could be as simple as fining the account for an amount equal to the next N block rewards. This would require a minimum balance of N*reward.
+	Note that a way to prevent/handle "blocking" of submissions is also important. This might just require good PTP network design.
+(5) the next N blocks can be mined only by addresses which meet the following conditions:
+	hash(concat(allRNGsubmissions,myRNGsubmission,address,blockHeight)) < (lotteryDiff * dailyRNGsubmissions)
+
+Not every user would want to enter the lottery, and this is fine. There would be a simple calculator for a miner to use, which says something like "how often can I submit a random number to the lottery while still making X% profit margin?". It's a fairly straightforward calculation, which could be done automatically.
+
+The summary is that you can use the lottery result to allow certain miners to mine the next block, drastically reducing hash power on the network.
+
+
+
+problems to solve:
+-submission withholding needs to be understood
+	is it reasonable to submit through multiple peers? will that fully solve issue?
+	could you stage the rng submissions in various peers? i.e. they would know your number before reveal, but that wouldn't matter unless they also knew every other submission
+-technically, this doesn't solve the shifting of hash power to winning addresses, and won't mitigate the energy problem. This may still require an "easy hash" sort of thing.
+	perhaps burn is proportional to your hash power? and reward & difficulty are proportional to burn? (not great)
+	
